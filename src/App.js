@@ -6,10 +6,11 @@ import WriteRFID from "./components/WritePage/WriteRFID";
 import ScanRFID from "./components/customer/ScanRFID";
 import { useState,useEffect } from "react";
 import axios from "axios";
+import { Buffer } from 'buffer';
 function App() {
   const [products,setProducts] = useState([]);
   const arr = [{id: "P001",image: "https://bizweb.dktcdn.net/100/360/184/products/nu-o-c-suo-i-1.jpg?v=1640425989953",name: "Aquafina",price: "1$"}]
-
+  window.Buffer = Buffer;
   useEffect(()=>{
     fetchProduct();
   },[])
