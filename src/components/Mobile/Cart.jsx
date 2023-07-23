@@ -1,16 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import React from "react";
 import axios from "axios";
 import imageScan from "../../assets/image/placeRFID.jpg";
-import Table from "../DataTable/DataTable";
-import { Routes, useLocation } from "react-router-dom";
 import soundScanned from "../../assets/Sound/Barcode-scanner-beep-sound.mp3";
-import { v1 as uuidv1 } from "uuid";
-import { Select } from "@mui/material";
-import MenuItem from "@mui/material/MenuItem";
 import { Button } from "@mui/material";
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+import Table from "../MobileTable/DataTable";
+import { Routes, useLocation } from "react-router-dom";
 var mqtt = require("mqtt");
-
 const connectUrl = `wss://broker.emqx.io:8084/mqtt`;
 const audio = new Audio(soundScanned);
 const client = mqtt.connect(connectUrl, {
@@ -19,36 +15,26 @@ const client = mqtt.connect(connectUrl, {
   password: "thinhbeo2801",
 });
 client.setMaxListeners(100);
-// client.on('connect', function () {
-//   client.subscribe('scanRFID', function (err) {
-//     if (err) {
-//       console.log(err);
-//     }
-//   })
-
-// })
-
-const ScanRFID = ({ productList }) => {
-  const mountedRef = useRef();
-  const [checkoutCounter, setCheckoutCounter] = useState("b2211");
+const Cart = ({ productList }) => {
+  const [mobileCart, setMobileCart] = useState("b2211");
   const [scan, setScan] = useState(false);
   const [productScan, setProductScan] = useState(() => new Set());
   const [productData, setProductData] = useState([]);
   const [total, setTotal] = useState(0);
   const [continueScan, setContinueScan] = useState(true);
   const [scanSound, setScanSound] = useState(false);
-  const handleStartScan = () => {
-    setScan(true);
-    window.localStorage.setItem("checkScan", JSON.stringify(true));
-    let message = "start to scan " + checkoutCounter;
-    console.log(message);
-    client.publish("CheckoutRFID", message);
-    client.subscribe(checkoutCounter);
-  };
   const totalVND = new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
   }).format(total);
+  const handleStartScan = () => {
+    setScan(true);
+    window.localStorage.setItem("checkScan", JSON.stringify(true));
+    let message = "start to scan " + mobileCart;
+    console.log(message);
+    client.publish("CheckoutRFID", message);
+    client.subscribe(mobileCart);
+  };
 
   function updateLocalStorage() {
     const scanList = Array.from(productScan);
@@ -86,7 +72,6 @@ const ScanRFID = ({ productList }) => {
 
   useEffect(() => {
     const checkScanned = window.localStorage.getItem("checkScan");
-
     if (JSON.parse(checkScanned) !== null) {
       setScan(JSON.parse(checkScanned));
       if (JSON.parse(checkScanned)) {
@@ -107,6 +92,8 @@ const ScanRFID = ({ productList }) => {
   }, []);
 
   useEffect(() => {
+    const cartIDParam = window.location.pathname;
+    setMobileCart(cartIDParam.split("/")[2]);
     updateLocalStorage();
     const interval = setInterval(() => {
       const scanList = Array.from(productScan);
@@ -210,13 +197,12 @@ const ScanRFID = ({ productList }) => {
     // const data = await [...productScan];
     // await console.log("test: ", data);
   };
-
   function handleOnchange(event) {
-    setCheckoutCounter(event.target.value);
+    setMobileCart(event.target.value);
   }
   function handleTurnOnAudio() {
-    setScanSound(true);
     setContinueScan(true);
+    setScanSound(true);
     audio.play();
   }
 
@@ -241,6 +227,7 @@ const ScanRFID = ({ productList }) => {
         window.location.replace(response.data);
       });
   };
+
   return (
     <div>
       {scan == false ? (
@@ -252,17 +239,7 @@ const ScanRFID = ({ productList }) => {
               display: "flex",
               marginTop: "10%",
             }}
-          >
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={checkoutCounter}
-              label="Age"
-              onChange={(e) => handleOnchange(e)}
-            >
-              <MenuItem value="b2211">Counter 1</MenuItem>
-            </Select>
-          </div>
+          ></div>
           <div
             style={{
               position: "absolute",
@@ -286,7 +263,7 @@ const ScanRFID = ({ productList }) => {
               marginTop: "1%",
             }}
           >
-            <h1>Self Checkout Item List</h1>
+            <h1>Cart</h1>
           </div>
           {productData.length == 0 ? (
             <div
@@ -368,7 +345,7 @@ const ScanRFID = ({ productList }) => {
                     style={{
                       display: "flex",
                       position: "absolute",
-                      top: "50%",
+                      top: "45%",
                       left: "50%",
                       transform: "translate(-50%, -50%)",
                     }}
@@ -383,27 +360,16 @@ const ScanRFID = ({ productList }) => {
                     />{" "}
                     <div></div>
                   </div>
-                  <div
+                  <h2
                     style={{
-                      display: "block",
+                      display: "flex",
                       position: "absolute",
-                      top: "85%",
-                      left: "50%",
-                      marginLeft: "20%",
+                      top: "80%",
+                      left: "25%",
                     }}
                   >
-                    <h2 style={{}}>$Total: {totalVND}</h2>
-                    <Button
-                      variant="contained"
-                      style={{
-                        backgroundColor: "green",
-                        width: "200px",
-                      }}
-                      onClick={() => handleClickCheckout()}
-                    >
-                      Checkout
-                    </Button>
-                  </div>
+                    $Total: {totalVND}
+                  </h2>
                 </div>
               )}
             </div>
@@ -414,4 +380,4 @@ const ScanRFID = ({ productList }) => {
   );
 };
 
-export default ScanRFID;
+export default Cart;

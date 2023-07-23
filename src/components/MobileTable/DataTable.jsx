@@ -13,15 +13,15 @@ const DataTable = ({
   const columns = [
     {
       field: "itemnumber",
-      headerName: "Item Number",
+      headerName: "Item",
       sortable: false,
-      width: 150,
+      width: 0,
       height: 400,
     },
     {
       field: "image",
-      headerName: "Image",
-      width: 100,
+      headerName: "Img",
+      width: 0,
       sortable: false,
       renderCell: (params) => (
         <img
@@ -35,28 +35,26 @@ const DataTable = ({
     },
     {
       field: "name",
-      headerName: "Product Name",
+      headerName: "Name",
       sortable: false,
-      width: 150,
+      width: 78,
     },
-    { field: "quantity", headerName: "Quantity", sortable: false, width: 150 },
+    { field: "quantity", headerName: "Qty", sortable: false, width: 30 },
     {
       field: "price",
       headerName: "Price",
-      width: 150,
+      width: 70,
       renderCell: (params) => (
-        <p>
-          {new Intl.NumberFormat("vi-VN", {
-            style: "currency",
-            currency: "VND",
-          }).format(params.value)}
-        </p>
+        <p>{new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(params.value)}</p>
       ),
     },
     {
       field: "option",
       headerName: "Option",
-      width: 200,
+      width: 90,
       sortable: false,
       renderCell: (params) => (
         <Button
@@ -69,8 +67,13 @@ const DataTable = ({
           }}
           onClick={async (e) => {
             var total = totalValue;
-            let newTotal = Number(total) - Number(params.row.price);
-            await window.localStorage.setItem("Total", newTotal);
+            let newTotal =
+              Number(total) -
+              Number(params.row.price)
+            await window.localStorage.setItem(
+              "Total",
+             newTotal
+            );
             await setTotalValue(newTotal);
             var retrieveCart = [...products];
             var newList = [...RFIDList];
@@ -112,7 +115,7 @@ const DataTable = ({
   ];
   console.log(products);
   return (
-    <div style={{ height: 630, width: "100%" }}>
+    <div style={{ height: 530, width: 390 }}>
       <DataGrid
         rows={products}
         columns={columns}

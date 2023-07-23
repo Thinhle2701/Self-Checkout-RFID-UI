@@ -25,7 +25,7 @@ function SearchBar({ onHandleSearchItem }) {
 
 //   }
   return (
-    <div style={{ border: '3px solid black',borderRadius:"30px",width:"600px",paddingLeft:"15px",height:"40px"}}>
+    <div style={{ border: '3px solid black',borderRadius:"30px",width:"450px",paddingLeft:"15px",height:"40px"}}>
     <div className="search" >
       <div className="searchInputs" >
         <input

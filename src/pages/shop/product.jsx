@@ -1,9 +1,11 @@
-import React, { useContext,useState } from "react";
-import Modal from 'react-modal';
+import React, { useContext, useState } from "react";
+import Modal from "react-modal";
 import WriteProduct from "../../components/WriteProduct/WriteProduct";
-import "./shop.css"
-import {Routes, Route, useNavigate} from 'react-router-dom';
-
+import "./shop.css";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import EditIcon from "@mui/icons-material/Edit";
+import { IconButton, Tooltip } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 const customStyles = {
   content: {
     top: "50%",
@@ -18,28 +20,57 @@ const customStyles = {
     borderColor: "black",
   },
 };
-export const Product = ({product}) => {
+export const Product = ({ product }) => {
   const navigate = useNavigate();
   const navigateProduct = () => {
     // 👇️ navigate to /contacts
-    const link = '/write/' + product.id;
+    const link = "/write/" + product.id;
     navigate(link);
   };
-  const [modalOpen,setModalOpen] = useState(false);
-  console.log(product)
+  const [modalOpen, setModalOpen] = useState(false);
+  console.log(product);
   return (
     <div className="product">
-      <img src={product.image} width={250} height={250} />
+      <img src={product.image} width={250} height={300} />
       <div className="description">
         <p>
-          <b>{product.name}</b>
+          <b style={{ fontSize: "25px" }}>{product.name}</b>
         </p>
-        <p>{product.price}</p>
-    </div>
+        <p style={{ fontSize: "20px", color: "green" }}>
+          {new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+          }).format(product.price)}
+        </p>
+      </div>
       {/* <button className="addToCartBttn" onClick={()=>{setModalOpen(true)}}>
         Start to Write
       </button> */}
-      <button onClick={navigateProduct} className="addToCartBttn">start to write</button>
+      <div style={{ display: "flex" }}>
+        <button onClick={navigateProduct} className="addToCartBttn">
+          Write RFID tag
+        </button>
+        <Tooltip title="Edit">
+          <IconButton
+            style={{}}
+            onClick={() => {
+              console.log("edit");
+            }}
+          >
+            <EditIcon style={{ color: "black" }} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Delete">
+          <IconButton
+            style={{}}
+            onClick={() => {
+              console.log("delete");
+            }}
+          >
+            <DeleteIcon style={{ color: "red" }} />
+          </IconButton>
+        </Tooltip>
+      </div>
     </div>
   );
 };
