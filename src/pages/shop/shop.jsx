@@ -5,6 +5,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import SearchBar from "../../components/SearchBar/SearchBar";
 import ProductModal from "../../components/Products/ProductModal";
 import Modal from "react-modal";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import { Button } from "@mui/material";
 const customStyles = {
   content: {
@@ -22,24 +24,72 @@ const customStyles = {
   },
 };
 
-export const Shop = ({ products }) => {
+export const Shop = ({ products, BE_URL, setAdminLogin, setUserInfo }) => {
   console.log(products);
   const [modalOpen, setModalOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState(products);
+  const [search, setSearch] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null);
+
+  const handleClose = () => {
+    setOpenMenu(null);
+  };
+
+  const handleClickProfileMenu = (event) => {
+    setOpenMenu(event.currentTarget);
+  };
+
+  const handleSignOut = () => {
+    setAdminLogin(false);
+    setUserInfo({});
+    window.localStorage.removeItem("user");
+    window.localStorage.setItem("checkLogin", false);
+  };
   return (
     <div className="shop">
       <div className="shopTitle">
         <div style={{ marginLeft: "35%" }}>
-          <SearchBar />
+          <div style={{ display: "flex" }}>
+            <SearchBar
+              setSearch={setSearch}
+              productList={products}
+              setProductSearch={setProductSearch}
+            />
+
+            <img
+              src="https://cdn-icons-png.flaticon.com/512/147/147142.png"
+              onClick={handleClickProfileMenu}
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "400px",
+                marginRight: "10px",
+                marginTop: "1px",
+                marginLeft: "45%",
+              }}
+            ></img>
+            <Menu
+              keepMounted
+              anchorEl={openMenu}
+              onClose={handleClose}
+              open={Boolean(openMenu)}
+            >
+              <MenuItem>My Account</MenuItem>
+              <MenuItem>Inventory</MenuItem>
+              <MenuItem onClick={() => handleSignOut()}>Sign Out</MenuItem>
+            </Menu>
+          </div>
         </div>
         <Button
           variant="contained"
           style={{
-            marginLeft: "80%",
+            marginLeft: "60%",
             backgroundColor: "black",
             border: "1px solid black",
             color: "white",
             borderRadius: "200px",
             fontSize: "17px",
+            marginTop: "20px",
           }}
           onClick={() => {
             setModalOpen(true);
@@ -51,19 +101,29 @@ export const Shop = ({ products }) => {
 
       {modalOpen === true ? (
         <Modal isOpen={modalOpen} style={customStyles} ariaHideApp={false}>
-          <ProductModal
-            // urlAPI={urlAPI}
-            setOpenModal={setModalOpen}
-          />
+          <ProductModal urlAPI={BE_URL} setOpenModal={setModalOpen} />
         </Modal>
       ) : (
         <p></p>
       )}
-      <div className="products">
-        {products.map((product) => (
-          <Product product={product} />
-        ))}
-      </div>
+
+      {search == false ? (
+        <>
+          <div className="products">
+            {products.map((product) => (
+              <Product product={product} urlAPI={BE_URL} />
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="products">
+            {productSearch.map((product) => (
+              <Product product={product} urlAPI={BE_URL} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

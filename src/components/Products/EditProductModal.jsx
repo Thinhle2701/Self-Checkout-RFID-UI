@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TextField, IconButton, Button } from "@mui/material";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -33,14 +33,14 @@ const successStyles = {
   },
 };
 
-const ProductModal = ({ setOpenModal,urlAPI }) => {
+const EditProductModal = ({ setOpenModal, productData, urlAPI }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const [productName, setProductName] = useState("");
-  const [productPrice, setProductPrice] = useState(0);
+  const [productName, setProductName] = useState(productData.name);
+  const [productPrice, setProductPrice] = useState(productData.price);
   const [errorMessage, setErrorMessage] = useState("");
-  const [checkUploadImage, setCheckUploadImage] = useState(false);
-  const [imageUpload, setImageUpload] = useState("");
-  const [createStatus, setCreateStatus] = useState(false);
+  const [checkUploadImage, setCheckUploadImage] = useState(true);
+  const [imageUpload, setImageUpload] = useState(productData.image);
+  const [updateStatus, setUpdateStatus] = useState(false);
   console.log(productName);
   console.log(productPrice);
   const uploadImage = () => {
@@ -54,46 +54,48 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
     });
   };
 
+  console.log(productData);
+
   const handleDelete = () => {
     setCheckUploadImage(false);
     setImageUpload("");
   };
 
-  const handleCancleCreateProduct = () => {
+  const handleCancleUpdateProduct = () => {
     setOpenModal(false);
   };
 
-  const handleCreateProduct = () => {
+  const handleUpdateProduct = async () => {
     if (productName == "" || productPrice === 0 || imageUpload === "") {
       setErrorMessage("You need to fill fully information");
     } else {
-      const productInfo = {
-        name: productName,
-        price: productPrice ,
-        image: imageUpload,
-      };
-      console.log(productInfo);
-      const url = urlAPI + "/api/product/add_product"
-      axios
-        .post(url, productInfo)
-        .then(
-          async (res) => {
-            if (res.data.success == false) {
-              setErrorMessage(res.data.message);
-            } else {
-              console.log(res.data.message);
-              await delay(200);
-              setCreateStatus(true);
-              await delay(2000);
-              setCreateStatus(false);
-              setOpenModal(false);
-              await window.location.reload();
-            }
-          },
-          (error) => {
-            console.log(error);
-          }
-        );
+      if (
+        productName == productData.name &&
+        productPrice == productData.price &&
+        imageUpload == productData.image
+      ) {
+        console.log("No changes");
+      } else {
+        const url = urlAPI + "/api/product/update/" + productData.id;
+        await axios
+          .put(url, {
+            name: productName,
+            image: imageUpload,
+            price: productPrice,
+          })
+          .then(async (res) => {
+            console.log("api", res);
+            await delay(200);
+            setUpdateStatus(true);
+            await delay(2000);
+            setUpdateStatus(false);
+            setOpenModal(false);
+            await window.location.reload();
+          })
+          .catch(function (err) {
+            console.log(err);
+          });
+      }
     }
   };
   return (
@@ -132,7 +134,7 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
           <p style={{ fontWeight: "bold" }}>Product Name</p>
           <TextField
             id="outlined-basic"
-            label="Name"
+            value={productName}
             variant="outlined"
             onChange={(e) => {
               setErrorMessage("");
@@ -145,7 +147,7 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
           <p style={{ fontWeight: "bold" }}>Price</p>
           <TextField
             id="outlined-basic"
-            label="$ Price"
+            value={productPrice}
             variant="outlined"
             onChange={(e) => {
               setErrorMessage("");
@@ -187,7 +189,7 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
           >
             <Button
               variant="outlined"
-              onClick={handleCancleCreateProduct}
+              onClick={handleCancleUpdateProduct}
               style={{ border: "1px solid black", color: "black" }}
             >
               Cancel
@@ -200,13 +202,13 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
                 marginLeft: "30%",
                 width: "100px",
               }}
-              onClick={handleCreateProduct}
+              onClick={handleUpdateProduct}
             >
-              Create
+              Update
             </Button>
 
             <Modal
-              isOpen={createStatus}
+              isOpen={updateStatus}
               style={successStyles}
               ariaHideApp={false}
             >
@@ -228,7 +230,7 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
                   fontSize: "16px",
                 }}
               >
-                Create Success
+                Update Success
               </p>
             </Modal>
           </div>
@@ -255,7 +257,7 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
           >
             <Button
               variant="outlined"
-              onClick={handleCancleCreateProduct}
+              onClick={handleCancleUpdateProduct}
               style={{ border: "1px solid black", color: "black" }}
             >
               Cancel
@@ -268,9 +270,9 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
                 marginLeft: "30%",
                 width: "100px",
               }}
-              onClick={handleCreateProduct}
+              onClick={handleUpdateProduct}
             >
-              Create
+              Update
             </Button>
           </div>
         </>
@@ -279,4 +281,4 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
   );
 };
 
-export default ProductModal;
+export default EditProductModal;

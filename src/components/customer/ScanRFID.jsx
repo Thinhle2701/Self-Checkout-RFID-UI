@@ -8,6 +8,42 @@ import { v1 as uuidv1 } from "uuid";
 import { Select } from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import { Button } from "@mui/material";
+import Modal from "react-modal";
+import AodIcon from "@mui/icons-material/Aod";
+import SensorsIcon from "@mui/icons-material/Sensors";
+import TextField from "@mui/material/TextField";
+
+const askStyles = {
+  content: {
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    height: "300px",
+    width: "500px",
+    backgroundColor: "white",
+    borderColor: "black",
+  },
+};
+
+const customStyles = {
+  content: {
+    top: "40%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    height: "300px",
+    width: "510px",
+    backgroundColor: "white",
+    borderColor: "black",
+    marginTop: "100px",
+  },
+};
+
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 var mqtt = require("mqtt");
 
@@ -37,6 +73,13 @@ const ScanRFID = ({ productList }) => {
   const [total, setTotal] = useState(0);
   const [continueScan, setContinueScan] = useState(true);
   const [scanSound, setScanSound] = useState(false);
+  const [checkoutModal, setCheckoutModal] = useState(false);
+  const [clickMomo, setClickMomo] = useState(false);
+  const [backButton, setBackButton] = useState(false);
+  const [inputCartModal, setInputCartModal] = useState(false);
+  const [cartID, setCartID] = useState("");
+  const [errorCart, setErrorCart] = useState(false);
+
   const handleStartScan = () => {
     setScan(true);
     window.localStorage.setItem("checkScan", JSON.stringify(true));
@@ -206,7 +249,12 @@ const ScanRFID = ({ productList }) => {
   }, [productScan, productData, total]);
 
   const addItem = async (item) => {
-    await setProductScan((prev) => new Set(prev).add(item));
+    if (item == "") {
+      console.log("blank RFID tag");
+    } else {
+      await setProductScan((prev) => new Set(prev).add(item));
+    }
+
     // const data = await [...productScan];
     // await console.log("test: ", data);
   };
@@ -230,17 +278,83 @@ const ScanRFID = ({ productList }) => {
   });
 
   const handleClickCheckout = () => {
+    setCheckoutModal(true);
+  };
+
+  const handleClickCheckoutVNPAY = () => {
     const body = {
-      amount: 10000,
+      amount: total,
       bankCode: "",
     };
     axios
-      .post("http://localhost:8000/api/checkout/create_payment_url", body)
-      .then((response) => {
-        console.log(response.status, response.data);
-        window.location.replace(response.data);
-      });
+      .post("http://localhost:8000/api/checkoutvnp/create_payment_url", body)
+      .then(
+        (response) => {
+          console.log(response.status, response.data);
+          window.location.replace(response.data);
+        },
+        (error) => {
+          console.log(error);
+        }
+      );
   };
+
+  const handleClickMomo = () => {
+    setClickMomo(true);
+    setBackButton(true);
+  };
+
+  const handleOnClickMomoQRcode = () => {
+    const body = {
+      amount: total,
+    };
+    axios.post("http://localhost:8000/api/checkoutmomo/qrcode", body).then(
+      async (response) => {
+        console.log(response);
+        await delay(2000);
+        window.location.replace(response.data);
+      },
+      (error) => {
+        console.log(error);
+      }
+    );
+  };
+
+  const handleOnClickMomoATM = () => {
+    const body = {
+      amount: total,
+    };
+    axios.post("http://localhost:8000/api/checkoutmomo/atm", body).then(
+      async (response) => {
+        console.log(response);
+        await delay(2000);
+        window.location.replace(response.data);
+      },
+      (error) => {
+        console.log(error);
+      }
+    );
+  };
+
+  const handleClickCancleInput = () => {
+    setCartID("");
+    setInputCartModal(false);
+  };
+
+  const handleClickSubmit = () => {
+    if (cartID != "") {
+      const url = "http://localhost:8000/api/cart/verify/" + cartID;
+      axios.get(url).then(
+        async (response) => {
+          console.log(response);
+        },
+        (error) => {
+          console.log(error);
+        }
+      );
+    }
+  };
+
   return (
     <div>
       {scan == false ? (
@@ -271,10 +385,143 @@ const ScanRFID = ({ productList }) => {
               transform: "translate(-50%, -50%)",
             }}
           >
-            <button className="addToCartBttn" onClick={() => handleStartScan()}>
-              CLick to Start scanning
+            <button
+              className="addToCartBttn"
+              style={{ marginRight: "100px" }}
+              onClick={() => handleStartScan()}
+            >
+              <SensorsIcon style={{ fontSize: "50px" }} />
+              <p style={{ fontSize: "15px" }}> Click to Start Scanning</p>
+            </button>
+
+            <button
+              className="addToCartBttn"
+              style={{ fontSize: "15px" }}
+              onClick={() => {
+                setInputCartModal(true);
+              }}
+            >
+              <AodIcon style={{ fontSize: "50px" }} />
+              <p> Get Item From Mobile Cart</p>
             </button>
           </div>
+
+          {inputCartModal === true ? (
+            <>
+              <Modal
+                isOpen={inputCartModal}
+                style={customStyles}
+                ariaHideApp={false}
+              >
+                <div>
+                  {" "}
+                  <button
+                    style={{
+                      marginLeft: "auto",
+                      display: "flex",
+                      backgroundColor: "transparent",
+                      border: "none",
+                      fontSize: "20px",
+                      cursor: "pointer",
+                      marginBottom: "-30px",
+                    }}
+                    onClick={() => {
+                      setInputCartModal(false);
+                    }}
+                  >
+                    X
+                  </button>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginBottom: "-40px",
+                      fontSize: "17px",
+                      marginTop: "20px",
+                    }}
+                  >
+                    <h2>Transfer Mobile Cart To Self-Checkout</h2>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginBottom: "-40px",
+                      fontSize: "17px",
+                      marginTop: "11%",
+                    }}
+                  >
+                    <TextField
+                      id="outlined-helperText"
+                      label="Input Your CartID"
+                      placeholder="CartID"
+                      helperText="CartID From Mobile Cart"
+                      onChange={(e) => {
+                        if (e.target.value == "") {
+                          setErrorCart(false);
+                        }
+                        setCartID(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginBottom: "-40px",
+                      fontSize: "17px",
+                      marginTop: "40px",
+                    }}
+                  >
+                    {errorCart === true ? (
+                      <>
+                        <p style={{ color: "red", fontWeight: "bold" }}>
+                          ❌ Invalid CartID
+                        </p>
+                      </>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginBottom: "-40px",
+                      fontSize: "17px",
+                      marginTop: "14%",
+                    }}
+                  >
+                    <Button
+                      variant="outlined"
+                      style={{ border: "1px solid black", color: "black" }}
+                      onClick={() => {
+                        handleClickCancleInput();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="contained"
+                      style={{
+                        backgroundColor: "black",
+                        color: "white",
+                        marginLeft: "30%",
+                        width: "100px",
+                      }}
+                      onClick={() => {
+                        handleClickSubmit();
+                      }}
+                    >
+                      Submit
+                    </Button>
+                  </div>
+                </div>
+              </Modal>
+            </>
+          ) : (
+            <></>
+          )}
         </div>
       ) : (
         <div>
@@ -403,6 +650,296 @@ const ScanRFID = ({ productList }) => {
                     >
                       Checkout
                     </Button>
+
+                    <Modal
+                      isOpen={checkoutModal}
+                      style={askStyles}
+                      ariaHideApp={false}
+                    >
+                      <div>
+                        <button
+                          style={{
+                            marginLeft: "auto",
+                            display: "flex",
+                            backgroundColor: "transparent",
+                            border: "none",
+                            fontSize: "20px",
+                            cursor: "pointer",
+                            marginBottom: "-30px",
+                          }}
+                          onClick={() => {
+                            setCheckoutModal(false);
+                            setClickMomo(false);
+                          }}
+                        >
+                          X
+                        </button>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            marginBottom: "-40px",
+                            fontSize: "20px",
+                          }}
+                        >
+                          <h2>Select Payment Method</h2>
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "5%",
+                            marginLeft: "15%",
+                            display: "flex",
+                          }}
+                        >
+                          {backButton == true ? (
+                            <>
+                              {" "}
+                              <Button
+                                style={{
+                                  position: "absolute",
+                                  left: "-5px",
+                                  fontSize: "40px",
+                                  marginTop: "100px",
+                                }}
+                                onClick={() => {
+                                  setBackButton(false);
+                                  setClickMomo(false);
+                                }}
+                              >
+                                🔙
+                              </Button>
+                              <Button
+                                style={{ display: "block" }}
+                                onClick={() => {
+                                  handleClickMomo();
+                                }}
+                              >
+                                <h3
+                                  style={{
+                                    color: "#ff0066",
+                                    fontWeight: "bold",
+                                    fontSize: "20px",
+                                  }}
+                                >
+                                  Momo
+                                </h3>
+                                <img
+                                  src="https://avatars.githubusercontent.com/u/36770798?s=280&v=4"
+                                  width={100}
+                                  height={100}
+                                ></img>
+                              </Button>
+                              {clickMomo === true ? (
+                                <>
+                                  <div
+                                    style={{
+                                      marginLeft: "20%",
+                                      marginTop: "10%",
+                                    }}
+                                  >
+                                    <Button
+                                      style={{
+                                        display: "flex",
+                                        border: "1px solid red",
+                                      }}
+                                      onClick={() => {
+                                        handleOnClickMomoQRcode();
+                                      }}
+                                    >
+                                      <h3
+                                        style={{
+                                          color: "red",
+                                          fontWeight: "bold",
+                                          fontSize: "12px",
+                                        }}
+                                      >
+                                        MOMO QRcode
+                                      </h3>
+                                      <img
+                                        src="https://t3.ftcdn.net/jpg/02/23/88/58/360_F_223885881_Zotk7yyvWJDvq6iWq2A9XU60iVJEnrzC.jpg"
+                                        width={80}
+                                        height={60}
+                                      ></img>
+                                    </Button>
+
+                                    <Button
+                                      style={{
+                                        display: "flex",
+                                        border: "1px solid blue",
+                                        marginTop: "10px",
+                                        paddingRight: "15px",
+                                      }}
+                                      onClick={() => {
+                                        handleOnClickMomoATM();
+                                      }}
+                                    >
+                                      <h3
+                                        style={{
+                                          color: "#6666ff",
+                                          fontWeight: "bold",
+                                          fontSize: "12px",
+                                        }}
+                                      >
+                                        Momo ATM
+                                      </h3>
+                                      <img
+                                        style={{ marginLeft: "20px" }}
+                                        src="https://th.bing.com/th/id/OIP.2KgJVfVl-6IQVRasNvbCyQHaHa?pid=ImgDet&rs=1"
+                                        width={80}
+                                        height={60}
+                                      ></img>
+                                    </Button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    style={{
+                                      display: "block",
+                                      marginLeft: "35%",
+                                    }}
+                                    onClick={() => {
+                                      handleClickCheckoutVNPAY();
+                                    }}
+                                  >
+                                    <h3
+                                      style={{
+                                        color: "#6666ff",
+                                        fontWeight: "bold",
+                                        fontSize: "20px",
+                                      }}
+                                    >
+                                      VNPAY
+                                    </h3>
+                                    <img
+                                      src="https://play-lh.googleusercontent.com/o-_z132f10zwrco4NXk4sFqmGylqXBjfcwR8-wK0lO1Wk4gzRXi4IZJdhwVlEAtpyQ"
+                                      width={100}
+                                      height={100}
+                                    ></img>
+                                  </Button>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                style={{ display: "block" }}
+                                onClick={() => {
+                                  handleClickMomo();
+                                }}
+                              >
+                                <h3
+                                  style={{
+                                    color: "#ff0066",
+                                    fontWeight: "bold",
+                                    fontSize: "20px",
+                                  }}
+                                >
+                                  Momo
+                                </h3>
+                                <img
+                                  src="https://avatars.githubusercontent.com/u/36770798?s=280&v=4"
+                                  width={100}
+                                  height={100}
+                                ></img>
+                              </Button>
+
+                              {clickMomo === true ? (
+                                <>
+                                  <div
+                                    style={{
+                                      marginLeft: "20%",
+                                      marginTop: "10%",
+                                    }}
+                                  >
+                                    <Button
+                                      style={{
+                                        display: "flex",
+                                        border: "1px solid red",
+                                      }}
+                                      onClick={() => {
+                                        console.log("QRcode");
+                                      }}
+                                    >
+                                      <h3
+                                        style={{
+                                          color: "red",
+                                          fontWeight: "bold",
+                                          fontSize: "12px",
+                                        }}
+                                      >
+                                        MOMO QRcode
+                                      </h3>
+                                      <img
+                                        src="https://t3.ftcdn.net/jpg/02/23/88/58/360_F_223885881_Zotk7yyvWJDvq6iWq2A9XU60iVJEnrzC.jpg"
+                                        width={80}
+                                        height={60}
+                                      ></img>
+                                    </Button>
+
+                                    <Button
+                                      style={{
+                                        display: "flex",
+                                        border: "1px solid blue",
+                                        marginTop: "10px",
+                                        paddingRight: "15px",
+                                      }}
+                                      onClick={() => {
+                                        console.log("QRcode");
+                                      }}
+                                    >
+                                      <h3
+                                        style={{
+                                          color: "#6666ff",
+                                          fontWeight: "bold",
+                                          fontSize: "12px",
+                                        }}
+                                      >
+                                        Momo ATM
+                                      </h3>
+                                      <img
+                                        style={{ marginLeft: "20px" }}
+                                        src="https://th.bing.com/th/id/OIP.2KgJVfVl-6IQVRasNvbCyQHaHa?pid=ImgDet&rs=1"
+                                        width={80}
+                                        height={60}
+                                      ></img>
+                                    </Button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    style={{
+                                      display: "block",
+                                      marginLeft: "30%",
+                                    }}
+                                    onClick={() => {
+                                      handleClickCheckoutVNPAY();
+                                    }}
+                                  >
+                                    <h3
+                                      style={{
+                                        color: "#6666ff",
+                                        fontWeight: "bold",
+                                        fontSize: "20px",
+                                      }}
+                                    >
+                                      VNPAY
+                                    </h3>
+                                    <img
+                                      src="https://play-lh.googleusercontent.com/o-_z132f10zwrco4NXk4sFqmGylqXBjfcwR8-wK0lO1Wk4gzRXi4IZJdhwVlEAtpyQ"
+                                      width={100}
+                                      height={100}
+                                    ></img>
+                                  </Button>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </Modal>
                   </div>
                 </div>
               )}
