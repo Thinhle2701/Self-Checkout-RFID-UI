@@ -3,6 +3,25 @@ import axios from "axios";
 import greenTick from "../../assets/image/greenTick.png";
 import { Col, Divider, Row, Table } from "antd";
 import { Button } from "@mui/material";
+import emailjs from "@emailjs/browser";
+import Modal from "react-modal";
+import TextField from "@mui/material/TextField";
+const customStyles = {
+  content: {
+    top: "40%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    height: "300px",
+    width: "510px",
+    backgroundColor: "white",
+    borderColor: "black",
+    marginTop: "100px",
+  },
+};
+
 var ranonce = false;
 const CheckoutMoMoPage = ({ BE_URL }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,6 +29,16 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
   const [orderBill, setOrderBill] = useState({});
   const [invoicePage, setInvoicePage] = useState(false);
   const [succes, setSucces] = useState("1");
+  const [sendMailModal, setSendMailModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState(false);
+
+  const dateValueNormal = (dateCurr) => {
+    //"2023-12-04T07:22:30.243+00:00"
+    const date = new Date(dateCurr);
+    let dateStr = date.toLocaleString();
+    return dateStr;
+  };
 
   useEffect(() => {
     if (!ranonce) {
@@ -29,7 +58,7 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
         })
         .then(
           async (res) => {
-            if (res.data.resultCode == 0) {
+            if (res.data.resultCode === 0) {
               const urlAPI = BE_URL + "/api/order/find_transaction";
               axios
                 .post(urlAPI, {
@@ -37,7 +66,7 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                 })
                 .then(
                   async (response) => {
-                    if (response.data.success == true) {
+                    if (response.data.success === true) {
                       let ordItem = [];
                       for (
                         let i = 0;
@@ -74,6 +103,7 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                         cardHolder: "NGUYEN VAN A",
                         transDate: response.data.orderData.transDate,
                         paymentMethod: response.data.orderData.paymentMethod,
+                        orderDate: response.data.orderData.orderDate,
                       };
                       console.log("order exist", orderCreated);
                       console.log("ammout", response.data.orderData.totalPrice);
@@ -150,6 +180,7 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                               transDate: resAddOrder.data.data.transDate,
                               paymentMethod:
                                 resAddOrder.data.data.paymentMethod,
+                              orderDate: resAddOrder.data.data.orderDate,
                             };
                             await setOrderBill(orderCreated);
                             await setItems(ordItem);
@@ -190,10 +221,41 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
     console.log("invoice", orderBill);
   };
 
+  const handleClickSubmit = () => {
+    if (email === "") {
+      setEmailError(true);
+    } else {
+      const currentURL = window.location.href;
+      const host = currentURL.split("checkoutmomo");
+      const reviewInvoiceURL =
+        host[0] + "review_invoice?orderID=" + orderBill.orderID;
+
+      emailjs.init("WnU7YjuW7qxqmeZng");
+      emailjs
+        .send("service_1rdwrdi", "template_qlzppko", {
+          from_name: "RFID Self-Checkout Store",
+          user_name: "My Customer",
+          ord_id: orderBill.orderID,
+          user_email: email,
+          payment: "MOMO",
+          url: reviewInvoiceURL,
+        })
+        .then(
+          function () {
+            console.log("SUCCESS!");
+            setSendMailModal(false);
+          },
+          function (error) {
+            console.log("FAILED...", error);
+          }
+        );
+    }
+  };
+
   return (
     <div>
       <div>
-        {succes == "0" ? (
+        {succes === "0" ? (
           <>
             {invoicePage === false ? (
               <>
@@ -212,8 +274,7 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <p style={{ fontWeight: "bold" }}>
-                    We sent an email for your about order details. Please check
-                    mail to have fully status about your order{" "}
+                    Check carefully invoice before leaving counter
                   </p>
                 </div>
                 <div style={{ display: "flex" }}>
@@ -240,7 +301,21 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                 <div style={{ padding: 20 }}>
                   <h1 style={{ marginLeft: "40%", fontSize: "70px" }}>
                     Invoice
+                    <button
+                      className="addToCartBttn"
+                      style={{
+                        width: "300px",
+                        marginLeft: "20%",
+                        border: "1px solid black",
+                      }}
+                      onClick={() => {
+                        setSendMailModal(true);
+                      }}
+                    >
+                      📲 Send Invoice to Email
+                    </button>
                   </h1>
+
                   <Row gutter={24} style={{ marginTop: 32 }}>
                     <Col span={8}>
                       <h3 style={{ fontSize: "25px" }}>Bank Account</h3>
@@ -265,7 +340,7 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                         <tr>
                           <th style={{ fontSize: "20px" }}>Invoice Date :</th>
                           <td style={{ fontSize: "20px" }}>
-                            {orderBill.transDate}
+                            {dateValueNormal(orderBill.orderDate)}
                           </td>
                         </tr>
                         <tr>
@@ -304,7 +379,7 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                   </Row>
 
                   <Row style={{ marginTop: 48 }}>
-                    <Col span={8} offset={17}>
+                    <Col span={8} offset={9}>
                       <table>
                         <tr>
                           <th style={{ fontSize: "25px" }}>Total Amount :</th>
@@ -312,15 +387,157 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                             style={{
                               fontSize: "25px",
                               color: "green",
+                              paddingRight: "40px",
                               fontWeight: "bold",
                             }}
                           >
                             {orderBill.totalPrice}
                           </td>
+                          <td></td>
                         </tr>
                       </table>
                     </Col>
                   </Row>
+
+                  {sendMailModal === true ? (
+                    <>
+                      <Modal
+                        isOpen={sendMailModal}
+                        style={customStyles}
+                        ariaHideApp={false}
+                      >
+                        <div>
+                          {" "}
+                          <button
+                            style={{
+                              marginLeft: "auto",
+                              display: "flex",
+                              backgroundColor: "transparent",
+                              border: "none",
+                              fontSize: "20px",
+                              cursor: "pointer",
+                              marginBottom: "-30px",
+                            }}
+                            onClick={() => {
+                              setSendMailModal(false);
+                            }}
+                          >
+                            X
+                          </button>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              marginBottom: "-40px",
+                              fontSize: "17px",
+                              marginTop: "20px",
+                            }}
+                          >
+                            <h2>Email</h2>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              marginBottom: "-40px",
+                              fontSize: "17px",
+                              marginTop: "11%",
+                            }}
+                          >
+                            <TextField
+                              id="outlined-helperText"
+                              label="Input Your Email"
+                              placeholder="Email"
+                              helperText="We will send invoice to your email"
+                              onChange={(e) => {
+                                if (e.target.value === "") {
+                                  setEmailError(false);
+                                }
+                                setEmail(e.target.value);
+                              }}
+                            />
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              marginBottom: "-40px",
+                              fontSize: "17px",
+                              marginTop: "40px",
+                            }}
+                          >
+                            {emailError === true ? (
+                              <>
+                                {email === "" ? (
+                                  <>
+                                    <p
+                                      style={{
+                                        color: "red",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      ⚠️ Please Fill Your Email
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p
+                                      style={{
+                                        color: "red",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      ❌ Invalid Email
+                                    </p>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <></>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              marginBottom: "-40px",
+                              fontSize: "17px",
+                              marginTop: "14%",
+                            }}
+                          >
+                            <Button
+                              variant="outlined"
+                              style={{
+                                border: "1px solid black",
+                                color: "black",
+                              }}
+                              onClick={() => {
+                                setSendMailModal(false);
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              variant="contained"
+                              style={{
+                                backgroundColor: "black",
+                                color: "white",
+                                marginLeft: "30%",
+                                width: "100px",
+                              }}
+                              onClick={() => {
+                                handleClickSubmit();
+                              }}
+                            >
+                              Submit
+                            </Button>
+                          </div>
+                        </div>
+                      </Modal>
+                    </>
+                  ) : (
+                    <></>
+                  )}
                 </div>
               </>
             )}

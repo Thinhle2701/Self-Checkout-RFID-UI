@@ -3,6 +3,26 @@ import axios from "axios";
 import greenTick from "../../assets/image/greenTick.png";
 import { Col, Divider, Row, Table } from "antd";
 import { Button } from "@mui/material";
+import emailjs from "@emailjs/browser";
+import Modal from "react-modal";
+import TextField from "@mui/material/TextField";
+
+const customStyles = {
+  content: {
+    top: "40%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    height: "300px",
+    width: "510px",
+    backgroundColor: "white",
+    borderColor: "black",
+    marginTop: "100px",
+  },
+};
+
 var ranonce = false;
 const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,6 +30,9 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
   const [orderBill, setOrderBill] = useState({});
   const [invoicePage, setInvoicePage] = useState(false);
   const [succes, setSucces] = useState("01");
+  const [sendMailModal, setSendMailModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState(false);
   useEffect(() => {
     if (!ranonce) {
       const queryParameters = new URLSearchParams(window.location.search);
@@ -26,7 +49,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
         })
         .then(
           async (response) => {
-            if (response.data.success == true) {
+            if (response.data.success === true) {
               console.log(response.data.orderData.orderItem);
               let ordItem = [];
               for (
@@ -55,6 +78,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                 })
                 .then(
                   async (res) => {
+                    console.log(res);
                     const orderCreated = {
                       orderID: response.data.orderData.orderID,
                       orderItem: ordItem,
@@ -79,7 +103,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                   }
                 );
             } else {
-              if (vnp_TransactionStatus == "00") {
+              if (vnp_TransactionStatus === "00") {
                 console.log("checkout sucess");
                 console.log("orderID: ", vnp_TxnRef);
                 console.log("transDate: ", vnp_TransactionDate);
@@ -91,7 +115,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                   })
                   .then(
                     (response) => {
-                      if (response.data.vnp_TransactionStatus == "00") {
+                      if (response.data.vnp_TransactionStatus === "00") {
                         const cartList = JSON.parse(
                           window.localStorage.getItem("Cart")
                         );
@@ -156,6 +180,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                                 cardHolder: response.data.vnp_CardHolder,
                                 transDate: res.data.data.transDate,
                                 paymentMethod: res.data.data.paymentMethod,
+                                orderDate: res.data.data.orderDate
                               };
                               await setOrderBill(orderCreated);
                               await setItems(ordItem);
@@ -198,9 +223,39 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
     console.log("invoice", orderBill);
   };
 
+  const handleClickSubmit = () => {
+    if (email === "") {
+      setEmailError(true);
+    } else {
+      const currentURL = window.location.href;
+      const host = currentURL.split("checkoutvnp");
+      const reviewInvoiceURL =
+        host[0] + "review_invoice?orderID=" + orderBill.orderID;
+      emailjs.init("WnU7YjuW7qxqmeZng");
+      emailjs
+        .send("service_1rdwrdi", "template_qlzppko", {
+          from_name: "RFID Self-Checkout Store",
+          user_name: "My Customer",
+          ord_id: orderBill.orderID,
+          user_email: email,
+          payment: "VNPAY",
+          url: reviewInvoiceURL,
+        })
+        .then(
+          function () {
+            console.log("SUCCESS!");
+            setSendMailModal(false);
+          },
+          function (error) {
+            console.log("FAILED...", error);
+          }
+        );
+    }
+  };
+
   return (
     <div>
-      {succes == "00" ? (
+      {succes === "00" ? (
         <>
           {invoicePage === false ? (
             <>
@@ -217,12 +272,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                   src={greenTick}
                 ></img>
               </div>
-              <div style={{ textAlign: "center" }}>
-                <p style={{ fontWeight: "bold" }}>
-                  We sent an email for your about order details. Please check
-                  mail to have fully status about your order{" "}
-                </p>
-              </div>
+              <div style={{ textAlign: "center" }}></div>
               <div style={{ display: "flex" }}>
                 <div
                   style={{
@@ -245,18 +295,36 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
           ) : (
             <>
               <div style={{ padding: 20 }}>
-                <h1 style={{ marginLeft: "40%", fontSize: "70px" }}>Invoice</h1>
+                <h1 style={{ marginLeft: "40%", fontSize: "70px" }}>
+                  Invoice
+                  <button
+                    className="addToCartBttn"
+                    style={{
+                      width: "300px",
+                      marginLeft: "20%",
+                      border: "1px solid black",
+                    }}
+                    onClick={() => {
+                      setSendMailModal(true);
+                    }}
+                  >
+                    📲 Send Invoice to Email
+                  </button>
+                </h1>
                 <Row gutter={24} style={{ marginTop: 32 }}>
                   <Col span={8}>
                     <h3 style={{ fontSize: "25px" }}>Bank Account</h3>
                     <div style={{ fontSize: "20px" }}>
-                      Account holder name: {orderBill.cardHolder}
+                      {/* Account holder name: {orderBill.cardHolder} */}
+                      Account holder name : NGUYEN VAN A
                     </div>
                     <div style={{ fontSize: "20px" }}>
-                      Account number: {orderBill.cardNumber}
+                      {/* Account number: {orderBill.cardNumber} */}
+                      Account Number : 9704***********2198
                     </div>
                     <div style={{ fontSize: "20px" }}>
-                      Bank Code: {orderBill.bankCode}
+                      {/* Bank Code: {orderBill.bankCode} */}
+                      Bank Code : NCB
                     </div>
                   </Col>
                   <Col span={8} offset={8}>
@@ -309,15 +377,155 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                 </Row>
 
                 <Row style={{ marginTop: 48 }}>
-                  <Col span={9} offset={19}>
+                  <Col span={8} offset={17}>
                     <table>
-                      <tr>
+                      <tr style={{ fontSize: "30px" }}>
                         <th>Total Amount :</th>
                         <td>{orderBill.totalPrice}</td>
                       </tr>
                     </table>
                   </Col>
                 </Row>
+
+                {sendMailModal === true ? (
+                  <>
+                    <Modal
+                      isOpen={sendMailModal}
+                      style={customStyles}
+                      ariaHideApp={false}
+                    >
+                      <div>
+                        {" "}
+                        <button
+                          style={{
+                            marginLeft: "auto",
+                            display: "flex",
+                            backgroundColor: "transparent",
+                            border: "none",
+                            fontSize: "20px",
+                            cursor: "pointer",
+                            marginBottom: "-30px",
+                          }}
+                          onClick={() => {
+                            setSendMailModal(false);
+                          }}
+                        >
+                          X
+                        </button>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            marginBottom: "-40px",
+                            fontSize: "17px",
+                            marginTop: "20px",
+                          }}
+                        >
+                          <h2>Email</h2>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            marginBottom: "-40px",
+                            fontSize: "17px",
+                            marginTop: "11%",
+                          }}
+                        >
+                          <TextField
+                            id="outlined-helperText"
+                            label="Input Your Email"
+                            placeholder="Email"
+                            helperText="We will send invoice to your email"
+                            onChange={(e) => {
+                              if (e.target.value === "") {
+                                setEmailError(false);
+                              }
+                              setEmail(e.target.value);
+                            }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            marginBottom: "-40px",
+                            fontSize: "17px",
+                            marginTop: "40px",
+                          }}
+                        >
+                          {emailError === true ? (
+                            <>
+                              {email === "" ? (
+                                <>
+                                  <p
+                                    style={{
+                                      color: "red",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    ⚠️ Please Fill Your Email
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <p
+                                    style={{
+                                      color: "red",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    ❌ Invalid Email
+                                  </p>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <></>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            marginBottom: "-40px",
+                            fontSize: "17px",
+                            marginTop: "14%",
+                          }}
+                        >
+                          <Button
+                            variant="outlined"
+                            style={{
+                              border: "1px solid black",
+                              color: "black",
+                            }}
+                            onClick={() => {
+                              setSendMailModal(false);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="contained"
+                            style={{
+                              backgroundColor: "black",
+                              color: "white",
+                              marginLeft: "30%",
+                              width: "100px",
+                            }}
+                            onClick={() => {
+                              handleClickSubmit();
+                            }}
+                          >
+                            Submit
+                          </Button>
+                        </div>
+                      </div>
+                    </Modal>
+                  </>
+                ) : (
+                  <></>
+                )}
               </div>
             </>
           )}

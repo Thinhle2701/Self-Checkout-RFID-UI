@@ -16,9 +16,14 @@ import CheckoutVNPAYPage from "./components/CheckoutPage/CheckoutVNPAYPage";
 import CheckoutMoMoPage from "./components/CheckoutPage/CheckoutMoMoPage";
 import CartPage from "./components/Mobile/Cart";
 import Inventory from "./components/Inventory/Inventory";
+import Invoice from "./components/Invoice/Invoice";
+import ForgotPassword from "./components/Users/ForgotPassword";
+import Orders from "./components/Orders/Orders";
+
 import axios from "axios";
 import { Buffer } from "buffer";
 const urlBE = "http://localhost:8000";
+const urlFE = "http://localhost:3000";
 function App() {
   const [products, setProducts] = useState([]);
   const [adminLogin, setAdminLogin] = useState(true);
@@ -28,9 +33,31 @@ function App() {
     fetchProduct();
     const check = window.localStorage.getItem("checkLogin");
     const user = window.localStorage.getItem("user");
+    const refreshToken = window.localStorage.getItem("RFT");
     if (JSON.parse(check) !== null) {
-      setAdminLogin(JSON.parse(check));
-      setUserInfo(JSON.parse(user));
+      if (JSON.parse(check) === false) {
+        setAdminLogin(JSON.parse(check));
+        setUserInfo(JSON.parse(user));
+      } else {
+        const url = urlBE + "/api/user/get_token";
+        axios
+          .post(url, {
+            refreshToken: JSON.parse(refreshToken),
+          })
+          .then((res) => {
+            setAdminLogin(true);
+            setUserInfo(JSON.parse(user));
+            console.log("res ne", res);
+          })
+          .catch((error) => {
+            if (error.response.status === 403) {
+              setAdminLogin(false);
+              setUserInfo({});
+              window.localStorage.setItem("checkLogin", JSON.stringify(false));
+              console.log(error);
+            }
+          });
+      }
     } else {
       window.localStorage.setItem("checkLogin", JSON.stringify(false));
       setAdminLogin(false);
@@ -148,6 +175,34 @@ function App() {
                 ></LoginForm>
               )
             }
+          ></Route>
+
+          <Route
+            exact
+            path="/orderhistory"
+            element={
+              adminLogin ? (
+                <Orders urlApi={urlBE} />
+              ) : (
+                <LoginForm
+                  urlApi={urlBE}
+                  setAdminLogin={setAdminLogin}
+                  setUserInfo={setUserInfo}
+                ></LoginForm>
+              )
+            }
+          ></Route>
+
+          <Route
+            exact
+            path="/review_invoice"
+            element={<Invoice BE_URL={urlBE} />}
+          ></Route>
+
+          <Route
+            exact
+            path="/user/forgotpassword"
+            element={<ForgotPassword BE_URL={urlBE} />}
           ></Route>
         </Routes>
       </Router>

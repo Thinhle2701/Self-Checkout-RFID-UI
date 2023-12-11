@@ -64,7 +64,7 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
   };
 
   const handleCreateProduct = () => {
-    if (productName == "" || productPrice === 0 || imageUpload === "") {
+    if (productName === "" || productPrice === 0 || imageUpload === "") {
       setErrorMessage("You need to fill fully information");
     } else {
       const productInfo = {
@@ -78,7 +78,7 @@ const ProductModal = ({ setOpenModal,urlAPI }) => {
         .post(url, productInfo)
         .then(
           async (res) => {
-            if (res.data.success == false) {
+            if (res.data.success === false) {
               setErrorMessage(res.data.message);
             } else {
               console.log(res.data.message);

@@ -30,19 +30,19 @@ const client = mqtt.connect(connectUrl, {
   username: "thinh",
   password: "thinhbeo2801",
 });
-const Import = ({ urlAPI, setModalOpen, productList,userInfo }) => {
+const Import = ({ urlAPI, setModalOpen, productList, userInfo }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const [importDevice, setImportDevice] = useState("b2211");
   const [importedScan, setImportedScan] = useState(() => new Set());
   const [scan, setScan] = useState(false);
   const [importData, setImportData] = useState([]);
   const [scanSound, setScanSound] = useState(false);
-  const [importSuccess,setImportSuccess] = useState(false)
+  const [importSuccess, setImportSuccess] = useState(false);
   const handleStartScan = () => {
     setScan(true);
     let message = "start to scan " + importDevice;
     console.log(message);
-    client.publish("CheckoutRFID", message);
+    client.publish("ReadRFIDTag", message);
     client.subscribe(importDevice);
   };
 
@@ -76,11 +76,11 @@ const Import = ({ urlAPI, setModalOpen, productList,userInfo }) => {
       }
       var difference = scanList.filter((x) => uuidList.indexOf(x) === -1);
       if (difference.length > 0) {
-        if (importData.length == 0) {
+        if (importData.length === 0) {
           for (let i = 0; i < scanList.length; i++) {
             let proID = scanList[i].split("||")[1];
             for (let j = 0; j < productList.length; j++) {
-              if (proID == productList[j].id) {
+              if (proID === productList[j].id) {
                 var uuidArr = [];
                 uuidArr.push(scanList[i]);
                 var item = {
@@ -103,7 +103,7 @@ const Import = ({ urlAPI, setModalOpen, productList,userInfo }) => {
 
           var newItem = [];
           for (let i = 0; i < scanList.length; i++) {
-            if (arrUUID.includes(scanList[i]) == false) {
+            if (arrUUID.includes(scanList[i]) === false) {
               newItem.push(scanList[i]);
             }
           }
@@ -123,7 +123,7 @@ const Import = ({ urlAPI, setModalOpen, productList,userInfo }) => {
               setImportData(retrieveItem);
             } else {
               for (let j = 0; j < productList.length; j++) {
-                if (proID == productList[j].id) {
+                if (proID === productList[j].id) {
                   const uuidArr = [];
                   uuidArr.push(newItem[i]);
                   var item = {
@@ -159,7 +159,7 @@ const Import = ({ urlAPI, setModalOpen, productList,userInfo }) => {
           setImportSuccess(true);
           await delay(5000);
           setImportSuccess(false);
-          setModalOpen(false)
+          setModalOpen(false);
         }
       },
       (error) => {
@@ -200,7 +200,7 @@ const Import = ({ urlAPI, setModalOpen, productList,userInfo }) => {
         <h2>Import to Inventory</h2>
 
         <div>
-          {scan == false ? (
+          {scan === false ? (
             <div>
               <div
                 style={{
@@ -236,7 +236,7 @@ const Import = ({ urlAPI, setModalOpen, productList,userInfo }) => {
                   marginTop: "1%",
                 }}
               ></div>
-              {importData.length == 0 ? (
+              {importData.length === 0 ? (
                 <div
                   style={{
                     display: "flex",

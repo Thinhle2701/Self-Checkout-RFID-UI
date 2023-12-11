@@ -88,7 +88,7 @@ const DataTable = ({
 
             for (let i = 0; i < retrieveCart.length; i++) {
               if (retrieveCart[i].itemnumber === params.row.itemnumber) {
-                if (i == retrieveCart.length - 1) {
+                if (i === retrieveCart.length - 1) {
                   retrieveCart.pop();
                 } else {
                   for (let j = i; j < retrieveCart.length - 1; j++) {

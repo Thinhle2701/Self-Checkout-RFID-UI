@@ -30,8 +30,8 @@ const connectUrl = `wss://broker.emqx.io:8084/mqtt`;
 const audio = new Audio(soundScanned);
 const client = mqtt.connect(connectUrl, {
   clientId: "emqx_cloud_" + Math.random().toString(16).substring(2, 8),
-  username: "thinh",
-  password: "thinhbeo2801",
+  username: 'thinh',
+  password: 'thinhbeo2801'
 });
 
 const WriteRFID = ({ BE_URL, userInfo }) => {
@@ -129,7 +129,7 @@ const WriteRFID = ({ BE_URL, userInfo }) => {
       productID: product.id,
       userID: userInfo.userID,
     };
-    const url = BE_URL + "/api/rfid/add_rfid"
+    const url = BE_URL + "/api/rfid/add_rfid";
     axios.post(url, body).then(
       async (response) => {
         console.log(response);
@@ -162,7 +162,7 @@ const WriteRFID = ({ BE_URL, userInfo }) => {
               currency: "VND",
             }).format(product.price)}
           </p>
-          {writed == false ? (
+          {writed === false ? (
             <div style={{ display: "flex", marginTop: "5px" }}>
               <button className="addToCartBttn" onClick={handleStartWrite}>
                 Write
@@ -177,8 +177,6 @@ const WriteRFID = ({ BE_URL, userInfo }) => {
             <div style={{ display: "flex", marginTop: "5px" }}>
               <button
                 style={{
-                  color: "red",
-                  border: "2px solid red",
                   hoverColor: "red",
                 }}
                 className="addToCartBttn"
@@ -205,6 +203,7 @@ const WriteRFID = ({ BE_URL, userInfo }) => {
                           marginBottom: "20%",
                           border: "2px solid black",
                           borderRadius: "50px",
+                          width: "300px",
                         }}
                       >
                         <h2
@@ -224,26 +223,6 @@ const WriteRFID = ({ BE_URL, userInfo }) => {
                       </div>
                     </div>
                   )}
-                  <IconButton
-                    style={{
-                      display: "flex",
-                      border: "2px solid blue",
-                      borderRadius: "200px",
-                    }}
-                    onClick={() => {
-                      handleImportInvetory();
-                    }}
-                  >
-                    <p style={{ color: "blue", fontWeight: "bold" }}>
-                      Import Inventory
-                    </p>
-                    <InventoryIcon
-                      style={{
-                        color: "blue",
-                        fontSize: "50px",
-                      }}
-                    ></InventoryIcon>
-                  </IconButton>
                 </div>
               </>
             ) : (

@@ -75,7 +75,24 @@ export const Shop = ({ products, BE_URL, setAdminLogin, setUserInfo }) => {
               open={Boolean(openMenu)}
             >
               <MenuItem>My Account</MenuItem>
-              <MenuItem>Inventory</MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const currentUrl = window.location.href;
+                  const inventoryURL = currentUrl + "inventory";
+                  window.location.replace(inventoryURL);
+                }}
+              >
+                Inventory
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const currentUrl = window.location.href;
+                  const orderURL = currentUrl + "orderhistory";
+                  window.location.replace(orderURL);
+                }}
+              >
+                Order History
+              </MenuItem>
               <MenuItem onClick={() => handleSignOut()}>Sign Out</MenuItem>
             </Menu>
           </div>
@@ -107,7 +124,7 @@ export const Shop = ({ products, BE_URL, setAdminLogin, setUserInfo }) => {
         <p></p>
       )}
 
-      {search == false ? (
+      {search === false ? (
         <>
           <div className="products">
             {products.map((product) => (

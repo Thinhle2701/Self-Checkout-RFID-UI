@@ -66,13 +66,13 @@ const EditProductModal = ({ setOpenModal, productData, urlAPI }) => {
   };
 
   const handleUpdateProduct = async () => {
-    if (productName == "" || productPrice === 0 || imageUpload === "") {
+    if (productName === "" || productPrice === 0 || imageUpload === "") {
       setErrorMessage("You need to fill fully information");
     } else {
       if (
-        productName == productData.name &&
-        productPrice == productData.price &&
-        imageUpload == productData.image
+        productName === productData.name &&
+        productPrice === productData.price &&
+        imageUpload === productData.image
       ) {
         console.log("No changes");
       } else {

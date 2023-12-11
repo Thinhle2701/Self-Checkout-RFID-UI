@@ -45,6 +45,26 @@ const Inventory = ({
   };
   return (
     <div>
+      <button
+        style={{
+          padding: "10px 30px",
+          background: "#FFFFFF",
+          color: "black",
+          fontWeight: "bolb",
+          border: "none",
+          fontSize: "20px",
+          borderRadius: "5px",
+          cursor: "pointer",
+          transition: "0.5s",
+        }}
+        onClick={() => {
+          const currentURL = window.location.href;
+          const backURL = currentURL.split("inventory")[0];
+          window.location.replace(backURL);
+        }}
+      >
+        {"< Back"}{" "}
+      </button>
       <h1 style={{ display: "flex", justifyContent: "center" }}>Inventory</h1>
 
       <Button
@@ -56,7 +76,7 @@ const Inventory = ({
           color: "white",
           borderRadius: "200px",
           fontSize: "17px",
-          marginTop: "20px",
+          width: "200px",
         }}
         onClick={() => {
           setModalOpen(true);
@@ -75,6 +95,7 @@ const Inventory = ({
           borderRadius: "200px",
           fontSize: "17px",
           marginTop: "20px",
+          width: "200px",
         }}
         onClick={() => {
           window.location.reload();
@@ -88,7 +109,7 @@ const Inventory = ({
           style={{
             display: "flex",
             position: "absolute",
-            top: "50%",
+            top: "55%",
             left: "50%",
             transform: "translate(-50%, -50%)",
           }}

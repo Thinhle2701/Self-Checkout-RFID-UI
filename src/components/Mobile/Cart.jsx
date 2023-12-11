@@ -10,6 +10,7 @@ import { ToastContainer, toast } from "react-toastify";
 import Modal from "react-modal";
 import "react-toastify/dist/ReactToastify.css";
 import { CountdownCircleTimer } from "react-countdown-circle-timer";
+import MobileCartInstruction from "../Instruction/MobileCartInstruction";
 
 const customStyles = {
   content: {
@@ -34,7 +35,7 @@ const unsuccessStyles = {
     bottom: "auto",
     marginRight: "-50%",
     transform: "translate(-50%, -50%)",
-    height: "80px",
+    height: "100px",
     width: "100px",
     backgroundColor: "white",
     borderColor: "red",
@@ -61,13 +62,11 @@ const connectUrl = `wss://broker.emqx.io:8084/mqtt`;
 const audio = new Audio(soundScanned);
 const client = mqtt.connect(connectUrl, {
   clientId: "emqx_cloud_" + Math.random().toString(16).substring(2, 8),
-  username: "thinh",
-  password: "thinhbeo2801",
 });
 client.setMaxListeners(100);
 const Cart = ({ productList, BE_URL }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const [mobileCart, setMobileCart] = useState("b2211");
+  const [mobileCart, setMobileCart] = useState("5667bb");
   const [scan, setScan] = useState(false);
   const [productScan, setProductScan] = useState(() => new Set());
   const [productData, setProductData] = useState([]);
@@ -84,16 +83,26 @@ const Cart = ({ productList, BE_URL }) => {
   const [timer, setTimer] = useState(0);
   const [verifyCart, setVerifyCart] = useState(false);
   const [timeAvaiable, setTimeAvaiable] = useState(true);
+
+  const [itemModalScan, setItemModalScan] = useState(() => new Set());
+  const [flag, setFlag] = useState(false);
+  const [errorScan, setErrorScan] = useState(false);
+
   const totalVND = new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
   }).format(total);
+
+  const removeItemSet = (foo) => {
+    setItemModalScan((prev) => new Set([...prev].filter((x) => x !== foo)));
+  };
+
   const handleStartScan = () => {
     setScan(true);
     window.localStorage.setItem("checkScan", JSON.stringify(true));
     let message = "start to scan " + mobileCart;
     console.log(message);
-    client.publish("CheckoutRFID", message);
+    client.publish("ReadRFIDTag", message);
     client.subscribe(mobileCart);
   };
 
@@ -127,6 +136,13 @@ const Cart = ({ productList, BE_URL }) => {
         window.localStorage.setItem("RFID", JSON.stringify(scanList));
         window.localStorage.setItem("Cart", JSON.stringify(productData));
         window.localStorage.setItem("Total", total);
+        const checkCartExpire = JSON.parse(
+          window.localStorage.getItem("CartExpireTime")
+        );
+        if (checkCartExpire === null) {
+          const cartTime = new Date().getTime();
+          window.localStorage.setItem("CartExpireTime", cartTime);
+        }
       }
     }
   }
@@ -138,131 +154,56 @@ const Cart = ({ productList, BE_URL }) => {
     if (JSON.parse(checkScanned) !== null) {
       setScan(JSON.parse(checkScanned));
       if (JSON.parse(checkScanned)) {
-        handleStartScan();
-        console.log("transfer storage to state");
-        const RFIDList = JSON.parse(window.localStorage.getItem("RFID"));
-        for (let i = 0; i < RFIDList.length; i++) {
-          addItem(RFIDList[i]);
+        const checkCartExpire = JSON.parse(
+          window.localStorage.getItem("CartExpireTime")
+        );
+        const currentTime = new Date().getTime();
+
+        const timeDifference = Math.abs(currentTime - checkCartExpire);
+        const minutes = Math.floor(
+          (timeDifference % (1000 * 60 * 60)) / (1000 * 60)
+        );
+        if (minutes < 60) {
+          handleStartScan();
+          console.log("transfer storage to state");
+          const RFIDList = JSON.parse(window.localStorage.getItem("RFID"));
+          for (let i = 0; i < RFIDList.length; i++) {
+            addItem(RFIDList[i]);
+          }
+          const cartList = window.localStorage.getItem("Cart");
+          setProductData(JSON.parse(cartList));
+          const totalStorage = window.localStorage.getItem("Total");
+          setTotal(JSON.parse(totalStorage));
+        } else {
+          console.log("expire cart");
+          window.localStorage.clear();
+          window.location.reload();
         }
-        //var RFIDset = new Set(RFIDList);
-        // console.log("RFID set: ", productScan);
-        const cartList = window.localStorage.getItem("Cart");
-        setProductData(JSON.parse(cartList));
-        const totalStorage = window.localStorage.getItem("Total");
-        setTotal(JSON.parse(totalStorage));
       }
     }
   }, []);
 
   useEffect(() => {
+    if (flag === true) {
+      console.log("item cart changed", itemModalScan);
+      let itemArr = Array.from(itemModalScan);
+      console.log(itemArr);
+      RetrieveProduct(itemArr[0]);
+      removeItemSet(itemArr[0]);
+    }
     const cartIDParam = window.location.pathname;
     setMobileCart(cartIDParam.split("/")[2]);
     updateLocalStorage();
-    const interval = setInterval(() => {
-      const scanList = Array.from(productScan);
-      // console.log("array: ",productData.length)
-      // console.log("set: ",scanList.length)
-      var uuidList = [];
-      for (let i = 0; i < productData.length; i++) {
-        uuidList = uuidList.concat(productData[i].uuid);
-      }
-      var difference = scanList.filter((x) => uuidList.indexOf(x) === -1);
-      if (difference.length > 0) {
-        if (productData.length == 0) {
-          for (let i = 0; i < scanList.length; i++) {
-            let proID = scanList[i].split("||")[1];
-            for (let j = 0; j < productList.length; j++) {
-              if (proID == productList[j].id) {
-                const tableID = "item_1";
-                var uuidArr = [];
-                uuidArr.push(scanList[i]);
-                var item = {
-                  id: tableID,
-                  itemnumber: i + 1,
-                  productID: productList[j].id,
-                  name: productList[j].name,
-                  image: productList[j].image,
-                  quantity: 1,
-                  price: productList[j].price,
-                  uuid: uuidArr,
-                };
-                setProductData((oldArray) => [...oldArray, item]);
-                let newTotal = Number(total) + Number(item.price);
-                setTotal(newTotal);
-              }
-            }
-          }
-        } else {
-          var arrUUID = [];
-          for (let i = 0; i < productData.length; i++) {
-            arrUUID = arrUUID.concat(productData[i].uuid);
-          }
-
-          var newItem = [];
-          for (let i = 0; i < scanList.length; i++) {
-            if (arrUUID.includes(scanList[i]) == false) {
-              newItem.push(scanList[i]);
-            }
-          }
-
-          for (let i = 0; i < newItem.length; i++) {
-            let proID = newItem[i].split("||")[1];
-            const index = productData.findIndex((object) => {
-              return object.productID === proID;
-            });
-            if (index >= 0) {
-              console.log("add quantity");
-              var retrieveCart = [...productData];
-              retrieveCart[index].quantity = retrieveCart[index].quantity + 1;
-              retrieveCart[index].price =
-                Number(retrieveCart[index].price) +
-                Number(retrieveCart[index].price);
-              let arrayUUID = retrieveCart[index].uuid;
-              arrayUUID.push(newItem[i]);
-              retrieveCart[index].uuid = arrayUUID;
-              setProductData(retrieveCart);
-              let newTotal =
-                Number(total) +
-                Number(retrieveCart[index].price) /
-                  Number(retrieveCart[index].quantity);
-              setTotal(newTotal);
-            } else {
-              for (let j = 0; j < productList.length; j++) {
-                if (proID == productList[j].id) {
-                  const tableID = "item_" + Number(productData.length + 1);
-                  const uuidArr = [];
-                  uuidArr.push(newItem[i]);
-                  var item = {
-                    id: tableID,
-                    itemnumber: Number(productData.length + 1),
-                    productID: productList[j].id,
-                    name: productList[j].name,
-                    image: productList[j].image,
-                    quantity: 1,
-                    price: productList[j].price,
-                    uuid: uuidArr,
-                  };
-                  setProductData((oldArray) => [...oldArray, item]);
-                  let newTotal = Number(total) + Number(item.price);
-                  setTotal(newTotal);
-                }
-              }
-            }
-          }
-        }
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [productScan, productData, total]);
+  }, [itemModalScan, productScan, productData, total, flag]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (timeAvaiable == true && transferModal == true) {
-        if (verifyCart == false) {
-          const url = "http://localhost:8000/api/cart/check_verify/" + cartID;
+      if (timeAvaiable === true && transferModal === true) {
+        if (verifyCart === false) {
+          const url = BE_URL + "/api/cart/check_verify/" + cartID;
 
           axios.get(url).then((response) => {
-            if (response.data.success == true) {
+            if (response.data.success === true) {
               setVerifyCart(true);
             }
             console.log("res: ", response);
@@ -287,44 +228,52 @@ const Cart = ({ productList, BE_URL }) => {
   }
 
   function RetrieveProduct(uuid) {
-    if (productModal.uuid != uuid) {
-      console.log(uuid);
-      const url = "http://localhost:8000/api/product/" + uuid.split("||")[1];
-      axios
-        .get(url)
-        .then(async (res) => {
-          console.log("res ne: ", res);
-          if (res.status == 200) {
-            var obj = {
-              name: res.data.name,
-              price: res.data.price,
-              image: res.data.image,
-              uuid: uuid,
-            };
-            await setProductModal(obj);
-            await setModalOpen(true);
-          }
-        })
-        .catch(async (error) => {
-          await delay(200);
-          await setModalErrorOpen(true);
-          await delay(2000);
-          await setModalErrorOpen(false);
-        });
-    }
+    const url = BE_URL + "/api/rfid/verifyTag";
+    let proID = uuid.split("||")[1];
+    let uuidRFID = uuid.split("||")[0];
+    axios
+      .post(url, {
+        uuid: uuidRFID,
+        productID: proID,
+      })
+      .then(async (res) => {
+        var obj = {
+          id: res.data.productID,
+          name: res.data.name,
+          price: res.data.price,
+          image: res.data.image,
+          uuid: uuid,
+        };
+        await setProductModal(obj);
+        await setModalOpen(true);
+      })
+      .catch(async (error) => {
+        setErrorScan(true);
+        if (error.response.status === 400) {
+          await delay(1000);
+          setErrorScan(false);
+        }
+      });
+    setFlag(false);
   }
 
-  client.on("message", async function (topic, payload, packet) {
-    //var obj = JSON.parse(payload.toString())
-    var flag = false;
-    if (flag === false && modalOpen === false) {
-      await RetrieveProduct(payload.toString());
-      audio.play();
-      flag = true;
+  const addModalItem = async (item) => {
+    if (item === "") {
+      console.log("blank RFID tag");
+    } else {
+      await setItemModalScan((prev) => new Set(prev).add(item));
     }
-    //await addItem(payload.toString());
-
-    //await addToCart(obj)
+  };
+  client.on("message", async function (topic, payload, packet) {
+    if (payload.toString() === "") {
+      setErrorScan(true);
+      await delay(2000);
+      setErrorScan(false);
+    } else {
+      await addModalItem(payload.toString());
+      setFlag(true);
+      audio.play();
+    }
   });
 
   const handleTransferToCheckoutCart = () => {
@@ -344,19 +293,6 @@ const Cart = ({ productList, BE_URL }) => {
       .catch((err) => {
         console.log(err);
       });
-  };
-
-  const checkVerifyCart = async () => {
-    var flag = false;
-    if (flag == false) {
-      await delay(5000);
-      flag = true;
-    }
-
-    if (flag == true) {
-      console.log("hello");
-      flag = false;
-    }
   };
 
   const renderTime = ({ remainingTime }) => {
@@ -420,9 +356,85 @@ const Cart = ({ productList, BE_URL }) => {
     );
   };
 
+  const handleCloseVerifiedCart = () => {
+    window.localStorage.removeItem("RFID");
+    window.localStorage.removeItem("Cart");
+    window.localStorage.removeItem("Total");
+    window.localStorage.removeItem("checkScan");
+    window.location.reload();
+  };
+
+  function addItemScanToList(scanedItem) {
+    console.log(scanedItem);
+    if (productData.length === 0) {
+      const tableID = "item_1";
+      var uuidArr = [];
+      uuidArr.push(scanedItem.uuid);
+      var item = {
+        id: tableID,
+        itemnumber: 1,
+        productID: scanedItem.id,
+        name: scanedItem.name,
+        image: scanedItem.image,
+        quantity: 1,
+        price: scanedItem.price,
+        uuid: uuidArr,
+      };
+      setProductData((oldArray) => [...oldArray, item]);
+      let newTotal = Number(total) + Number(item.price);
+      setTotal(newTotal);
+      const cartTime = new Date().getTime();
+      window.localStorage.setItem("CartExpireTime", cartTime);
+    } else {
+      const index = productData.findIndex((object) => {
+        return object.productID === scanedItem.id;
+      });
+      if (index >= 0) {
+        console.log("add quantity");
+        var retrieveCart = [...productData];
+        retrieveCart[index].price =
+          Number(retrieveCart[index].price) +
+          Number(retrieveCart[index].price) /
+            Number(retrieveCart[index].quantity);
+        retrieveCart[index].quantity = retrieveCart[index].quantity + 1;
+
+        let arrayUUID = retrieveCart[index].uuid;
+        arrayUUID.push(scanedItem.uuid);
+        retrieveCart[index].uuid = arrayUUID;
+        setProductData(retrieveCart);
+        let newTotal =
+          Number(total) +
+          Number(retrieveCart[index].price) /
+            Number(retrieveCart[index].quantity);
+        setTotal(newTotal);
+        const cartTime = new Date().getTime();
+        window.localStorage.setItem("CartExpireTime", cartTime);
+      } else {
+        const tableID = "item_" + Number(productData.length + 1);
+        const uuidArr = [];
+        uuidArr.push(scanedItem.uuid);
+        var item = {
+          id: tableID,
+          itemnumber: Number(productData.length + 1),
+          productID: scanedItem.id,
+          name: scanedItem.name,
+          image: scanedItem.image,
+          quantity: 1,
+          price: scanedItem.price,
+          uuid: uuidArr,
+        };
+        setProductData((oldArray) => [...oldArray, item]);
+        let newTotal = Number(total) + Number(item.price);
+        setTotal(newTotal);
+        const cartTime = new Date().getTime();
+        window.localStorage.setItem("CartExpireTime", cartTime);
+      }
+    }
+  }
+
   return (
     <div>
-      {scan == false ? (
+      {scan === false ? (
         <div>
           <div
             style={{
@@ -447,6 +459,41 @@ const Cart = ({ productList, BE_URL }) => {
         </div>
       ) : (
         <div>
+          {errorScan === true ? (
+            <>
+              <Modal
+                isOpen={errorScan}
+                style={unsuccessStyles}
+                ariaHideApp={false}
+              >
+                <img
+                  style={{
+                    height: "40px",
+                    width: "50px",
+                    display: "block",
+                    textAlign: "center",
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                  }}
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Cross_red_circle.svg/1200px-Cross_red_circle.svg.png"
+                ></img>
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "red",
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    marginTop: "24px",
+                  }}
+                >
+                  Invalid Item
+                </p>
+              </Modal>
+            </>
+          ) : (
+            <></>
+          )}
+
           {modalOpen === true ? (
             <>
               {" "}
@@ -528,14 +575,15 @@ const Cart = ({ productList, BE_URL }) => {
                     }}
                     onClick={async () => {
                       if (productScan.has(productModal.uuid)) {
+                        await setModalOpen(false);
+                        await setProductModal({});
                         await delay(200);
                         await setModalWarningOpen(true);
                         await delay(2000);
                         setModalWarningOpen(false);
-                        await setModalOpen(false);
-                        await setProductModal({});
                       } else {
                         await addItem(productModal.uuid);
+                        await addItemScanToList(productModal);
                         setModalOpen(false);
                         setProductModal({});
                         await notify();
@@ -593,8 +641,8 @@ const Cart = ({ productList, BE_URL }) => {
               >
                 <img
                   style={{
-                    height: "60px",
-                    width: "60px",
+                    height: "40px",
+                    width: "50px",
                     display: "block",
                     textAlign: "center",
                     marginLeft: "auto",
@@ -625,9 +673,9 @@ const Cart = ({ productList, BE_URL }) => {
               marginTop: "10%",
             }}
           >
-            <h1>Cart</h1>
+            <h1>Cart 🛒 </h1>
           </div>
-          {productData.length == 0 ? (
+          {productData.length === 0 ? (
             <div
               style={{
                 display: "flex",
@@ -635,26 +683,28 @@ const Cart = ({ productList, BE_URL }) => {
                 justifyContent: "center",
               }}
             >
-              <img height={250} src={imageScan}></img>
+              {/* <img height={250} src={imageScan}></img> */}
+              <div>
+                <MobileCartInstruction />
+              </div>
               {scanSound === false ? (
                 <>
                   <div
                     style={{
                       position: "absolute",
-                      top: "50%",
+                      top: "80%",
                       left: "50%",
                       transform: "translate(-50%, -50%)",
-                      display: "block",
+                      display: "flex",
                     }}
                   >
                     <Button
                       style={{ marginTop: "40%" }}
                       onClick={() => handleTurnOnAudio()}
                     >
-                      <h2> Turn on Scan Sound</h2>
                       <img
-                        style={{ width: "200px", height: "200px" }}
-                        src="https://static.vecteezy.com/system/resources/previews/011/893/995/original/neumorphic-speaker-icon-neumorphism-speaker-button-free-png.png"
+                        style={{ width: "300px", height: "200px" }}
+                        src="https://th.bing.com/th/id/R.d124b43c4d7cb0fc45418947fb58e0cd?rik=AJfpSXpHLICvIw&pid=ImgRaw&r=0"
                         alt="my image"
                       />
                     </Button>
@@ -666,14 +716,16 @@ const Cart = ({ productList, BE_URL }) => {
             </div>
           ) : (
             <div>
-              {continueScan == false ? (
+              {continueScan === false ? (
                 <div>
                   <h4
                     style={{
+                      marginLeft: "100px",
                       position: "absolute",
                       top: "40%",
-                      left: "50%",
+                      left: "35%",
                       transform: "translate(-50%, -50%)",
+                      width: "300px",
                     }}
                   >
                     You have scanned some items
@@ -684,6 +736,7 @@ const Cart = ({ productList, BE_URL }) => {
                       top: "50%",
                       left: "50%",
                       transform: "translate(-50%, -50%)",
+                      width: "200px",
                     }}
                   >
                     <Button
@@ -825,7 +878,38 @@ const Cart = ({ productList, BE_URL }) => {
                               </>
                             ) : (
                               <>
-                                <p>Verified</p>
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    transform: "translate(-50%, -50%)",
+                                    display: "block",
+                                  }}
+                                >
+                                  <img
+                                    style={{
+                                      width: "250px",
+                                      height: "250px",
+                                      marginTop: "50px",
+                                    }}
+                                    src="https://us.123rf.com/450wm/get4net/get4net1901/get4net190102035/126403924-verified-shopping-cart.jpg?ver=6"
+                                  ></img>
+                                  <div>
+                                    <Button
+                                      onClick={handleCloseVerifiedCart}
+                                      variant="outlined"
+                                      style={{
+                                        border: "1px solid black",
+                                        color: "black",
+                                        marginLeft: "35%",
+                                        marginTop: "10%",
+                                      }}
+                                    >
+                                      Close
+                                    </Button>
+                                  </div>
+                                </div>
                               </>
                             )}
                           </div>

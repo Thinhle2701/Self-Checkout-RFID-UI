@@ -10,7 +10,7 @@ function SearchBar({ setSearch, productList, setProductSearch }) {
     setSearch(true);
     setSearchTerm(e.target.value);
     const value = e.target.value;
-    if (value == "") {
+    if (value === "") {
       setSearch(false);
     } else {
       if (typingTimeoutRef.current) {

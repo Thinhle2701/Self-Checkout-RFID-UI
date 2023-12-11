@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import imageScan from "../../assets/image/placeRFID.jpg";
 import Table from "../DataTable/DataTable";
-import { Routes, useLocation } from "react-router-dom";
 import soundScanned from "../../assets/Sound/Barcode-scanner-beep-sound.mp3";
-import { v1 as uuidv1 } from "uuid";
 import { Select } from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import { Button } from "@mui/material";
@@ -12,6 +10,7 @@ import Modal from "react-modal";
 import AodIcon from "@mui/icons-material/Aod";
 import SensorsIcon from "@mui/icons-material/Sensors";
 import TextField from "@mui/material/TextField";
+import CheckoutInstruction from "../Instruction/CheckoutInstruction";
 
 const askStyles = {
   content: {
@@ -25,6 +24,21 @@ const askStyles = {
     width: "500px",
     backgroundColor: "white",
     borderColor: "black",
+  },
+};
+
+const unsuccessStyles = {
+  content: {
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    height: "100px",
+    width: "100px",
+    backgroundColor: "white",
+    borderColor: "red",
   },
 };
 
@@ -47,12 +61,15 @@ const customStyles = {
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 var mqtt = require("mqtt");
 
-const connectUrl = `wss://broker.emqx.io:8084/mqtt`;
+// const connectUrl = `ws://broker.hivemq.com:8000/mqtt`;
+// const connectUrl = `ws://test.mosquitto.org:8080/mqtt`;
+// const connectUrl = `wss://mqtt.flespi.io:443`
+const connectUrl = `wss://broker.emqx.io:8084/mqtt`
 const audio = new Audio(soundScanned);
 const client = mqtt.connect(connectUrl, {
   clientId: "emqx_cloud_" + Math.random().toString(16).substring(2, 8),
-  username: "thinh",
-  password: "thinhbeo2801",
+  username: 'thinh',
+  password: 'thinhbeo2801'
 });
 client.setMaxListeners(100);
 // client.on('connect', function () {
@@ -64,8 +81,7 @@ client.setMaxListeners(100);
 
 // })
 
-const ScanRFID = ({ productList }) => {
-  const mountedRef = useRef();
+const ScanRFID = ({ productList, BE_URL }) => {
   const [checkoutCounter, setCheckoutCounter] = useState("b2211");
   const [scan, setScan] = useState(false);
   const [productScan, setProductScan] = useState(() => new Set());
@@ -79,19 +95,24 @@ const ScanRFID = ({ productList }) => {
   const [inputCartModal, setInputCartModal] = useState(false);
   const [cartID, setCartID] = useState("");
   const [errorCart, setErrorCart] = useState(false);
+  const [errorScan, setErrorScan] = useState(false);
 
   const handleStartScan = () => {
     setScan(true);
     window.localStorage.setItem("checkScan", JSON.stringify(true));
     let message = "start to scan " + checkoutCounter;
     console.log(message);
-    client.publish("CheckoutRFID", message);
+    client.publish("ReadRFIDTag", message);
     client.subscribe(checkoutCounter);
   };
   const totalVND = new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
   }).format(total);
+
+  const removeItemSet = (foo) => {
+    setProductScan((prev) => new Set([...prev].filter((x) => x !== foo)));
+  };
 
   function updateLocalStorage() {
     const scanList = Array.from(productScan);
@@ -101,9 +122,6 @@ const ScanRFID = ({ productList }) => {
       window.localStorage.setItem("Cart", JSON.stringify(productData));
       window.localStorage.setItem("Total", JSON.stringify(total));
     } else {
-      // window.localStorage.setItem("RFID", JSON.stringify(scanList));
-      // window.localStorage.setItem("Cart", JSON.stringify(productData));
-      // window.localStorage.setItem("Total", JSON.stringify(total));
       const totalStorageValue = JSON.parse(totalStorage);
       if (Number(totalStorageValue) > Number(total)) {
         console.log("update state");
@@ -112,8 +130,6 @@ const ScanRFID = ({ productList }) => {
         for (let i = 0; i < RFIDList.length; i++) {
           addItem(RFIDList[i]);
         }
-        //var RFIDset = new Set(RFIDList);
-        // console.log("RFID set: ", productScan);
         const cartList = window.localStorage.getItem("Cart");
         setProductData(JSON.parse(cartList));
         const totalStorage = window.localStorage.getItem("Total");
@@ -123,6 +139,13 @@ const ScanRFID = ({ productList }) => {
         window.localStorage.setItem("RFID", JSON.stringify(scanList));
         window.localStorage.setItem("Cart", JSON.stringify(productData));
         window.localStorage.setItem("Total", total);
+        const checkCartExpire = JSON.parse(
+          window.localStorage.getItem("CartExpireTime")
+        );
+        if (checkCartExpire === null) {
+          const cartTime = new Date().getTime();
+          window.localStorage.setItem("CartExpireTime", cartTime);
+        }
       }
     }
   }
@@ -133,25 +156,41 @@ const ScanRFID = ({ productList }) => {
     if (JSON.parse(checkScanned) !== null) {
       setScan(JSON.parse(checkScanned));
       if (JSON.parse(checkScanned)) {
-        handleStartScan();
-        console.log("transfer storage to state");
-        const RFIDList = JSON.parse(window.localStorage.getItem("RFID"));
-        for (let i = 0; i < RFIDList.length; i++) {
-          addItem(RFIDList[i]);
+        const checkCartExpire = JSON.parse(
+          window.localStorage.getItem("CartExpireTime")
+        );
+        const currentTime = new Date().getTime();
+
+        const timeDifference = Math.abs(currentTime - checkCartExpire);
+        const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+        const minutes = Math.floor(
+          (timeDifference % (1000 * 60 * 60)) / (1000 * 60)
+        );
+        console.log("m", minutes);
+        console.log("h", hours);
+        if (minutes < 30 && hours === 0) {
+          handleStartScan();
+          console.log("transfer storage to state");
+          const RFIDList = JSON.parse(window.localStorage.getItem("RFID"));
+          for (let i = 0; i < RFIDList.length; i++) {
+            addItem(RFIDList[i]);
+          }
+          const cartList = window.localStorage.getItem("Cart");
+          setProductData(JSON.parse(cartList));
+          const totalStorage = window.localStorage.getItem("Total");
+          setTotal(JSON.parse(totalStorage));
+        } else {
+          console.log("expire cart");
+          window.localStorage.clear();
+          window.location.reload();
         }
-        //var RFIDset = new Set(RFIDList);
-        // console.log("RFID set: ", productScan);
-        const cartList = window.localStorage.getItem("Cart");
-        setProductData(JSON.parse(cartList));
-        const totalStorage = window.localStorage.getItem("Total");
-        setTotal(JSON.parse(totalStorage));
       }
     }
   }, []);
 
   useEffect(() => {
     updateLocalStorage();
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       const scanList = Array.from(productScan);
       // console.log("array: ",productData.length)
       // console.log("set: ",scanList.length)
@@ -161,29 +200,48 @@ const ScanRFID = ({ productList }) => {
       }
       var difference = scanList.filter((x) => uuidList.indexOf(x) === -1);
       if (difference.length > 0) {
-        if (productData.length == 0) {
+        if (productData.length === 0) {
           for (let i = 0; i < scanList.length; i++) {
             let proID = scanList[i].split("||")[1];
-            for (let j = 0; j < productList.length; j++) {
-              if (proID == productList[j].id) {
+            let uuid = scanList[i].split("||")[0];
+            //verifyRFID tag
+            const url = BE_URL + "/api/rfid/verifyTag";
+            axios
+              .post(url, {
+                uuid: uuid,
+                productID: proID,
+                // uuid: "12323",
+                // productID: "212321",
+              })
+              .then((res) => {
                 const tableID = "item_1";
                 var uuidArr = [];
                 uuidArr.push(scanList[i]);
                 var item = {
                   id: tableID,
                   itemnumber: i + 1,
-                  productID: productList[j].id,
-                  name: productList[j].name,
-                  image: productList[j].image,
+                  productID: res.data.productID,
+                  name: res.data.name,
+                  image: res.data.image,
                   quantity: 1,
-                  price: productList[j].price,
+                  price: res.data.price,
                   uuid: uuidArr,
                 };
                 setProductData((oldArray) => [...oldArray, item]);
                 let newTotal = Number(total) + Number(item.price);
                 setTotal(newTotal);
-              }
-            }
+                const cartTime = new Date().getTime();
+                window.localStorage.setItem("CartExpireTime", cartTime);
+              })
+              .catch(async (error) => {
+                console.log(error.response);
+                setErrorScan(true);
+                if (error.response.status === 400) {
+                  await removeItemSet(scanList[i]);
+                  await delay(1000);
+                  setErrorScan(false);
+                }
+              });
           }
         } else {
           var arrUUID = [];
@@ -193,63 +251,90 @@ const ScanRFID = ({ productList }) => {
 
           var newItem = [];
           for (let i = 0; i < scanList.length; i++) {
-            if (arrUUID.includes(scanList[i]) == false) {
+            if (arrUUID.includes(scanList[i]) === false) {
               newItem.push(scanList[i]);
             }
           }
 
           for (let i = 0; i < newItem.length; i++) {
             let proID = newItem[i].split("||")[1];
-            const index = productData.findIndex((object) => {
-              return object.productID === proID;
-            });
-            if (index >= 0) {
-              console.log("add quantity");
-              var retrieveCart = [...productData];
-              retrieveCart[index].quantity = retrieveCart[index].quantity + 1;
-              retrieveCart[index].price =
-                Number(retrieveCart[index].price) +
-                Number(retrieveCart[index].price);
-              let arrayUUID = retrieveCart[index].uuid;
-              arrayUUID.push(newItem[i]);
-              retrieveCart[index].uuid = arrayUUID;
-              setProductData(retrieveCart);
-              let newTotal =
-                Number(total) +
-                Number(retrieveCart[index].price) /
-                  Number(retrieveCart[index].quantity);
-              setTotal(newTotal);
-            } else {
-              for (let j = 0; j < productList.length; j++) {
-                if (proID == productList[j].id) {
+            let uuid = newItem[i].split("||")[0];
+
+            //verifyRFID tag
+            const url = BE_URL + "/api/rfid/verifyTag";
+            axios
+              .post(url, {
+                uuid: uuid,
+                productID: proID,
+              })
+              .then((res) => {
+                const index = productData.findIndex((object) => {
+                  return object.productID === proID;
+                });
+                if (index >= 0) {
+                  console.log("add quantity");
+                  var retrieveCart = [...productData];
+
+                  retrieveCart[index].price =
+                    Number(retrieveCart[index].price) +
+                    Number(retrieveCart[index].price) /
+                      Number(retrieveCart[index].quantity);
+                  retrieveCart[index].quantity =
+                    retrieveCart[index].quantity + 1;
+
+                  let arrayUUID = retrieveCart[index].uuid;
+                  arrayUUID.push(newItem[i]);
+                  retrieveCart[index].uuid = arrayUUID;
+                  setProductData(retrieveCart);
+                  console.log("price ", Number(retrieveCart[index].price));
+                  console.log("qty", Number(retrieveCart[index].quantity));
+                  let newTotal =
+                    Number(total) +
+                    Number(retrieveCart[index].price) /
+                      Number(retrieveCart[index].quantity);
+                  console.log("new total: ", newTotal);
+                  setTotal(newTotal);
+                  const cartTime = new Date().getTime();
+                  window.localStorage.setItem("CartExpireTime", cartTime);
+                } else {
                   const tableID = "item_" + Number(productData.length + 1);
                   const uuidArr = [];
                   uuidArr.push(newItem[i]);
-                  var item = {
+                  var itemObj = {
                     id: tableID,
                     itemnumber: Number(productData.length + 1),
-                    productID: productList[j].id,
-                    name: productList[j].name,
-                    image: productList[j].image,
+                    productID: res.data.productID,
+                    name: res.data.name,
+                    image: res.data.image,
                     quantity: 1,
-                    price: productList[j].price,
+                    price: res.data.price,
                     uuid: uuidArr,
                   };
-                  setProductData((oldArray) => [...oldArray, item]);
-                  let newTotal = Number(total) + Number(item.price);
+                  setProductData((oldArray) => [...oldArray, itemObj]);
+                  let newTotal = Number(total) + Number(itemObj.price);
                   setTotal(newTotal);
+                  const cartTime = new Date().getTime();
+                  window.localStorage.setItem("CartExpireTime", cartTime);
                 }
-              }
-            }
+              })
+              .catch(async (error) => {
+                console.log(error.response);
+                setErrorScan(true);
+                if (error.response.status === 400) {
+                  await removeItemSet(scanList[i]);
+                  await delay(1000);
+                  setErrorScan(false);
+                }
+              });
           }
         }
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [productScan, productData, total]);
+  }, [productScan, productData, total, productList]);
 
   const addItem = async (item) => {
-    if (item == "") {
+    if (item === "") {
       console.log("blank RFID tag");
     } else {
       await setProductScan((prev) => new Set(prev).add(item));
@@ -286,17 +371,16 @@ const ScanRFID = ({ productList }) => {
       amount: total,
       bankCode: "",
     };
-    axios
-      .post("http://localhost:8000/api/checkoutvnp/create_payment_url", body)
-      .then(
-        (response) => {
-          console.log(response.status, response.data);
-          window.location.replace(response.data);
-        },
-        (error) => {
-          console.log(error);
-        }
-      );
+    const url = BE_URL + "/api/checkoutvnp/create_payment_url";
+    axios.post(url, body).then(
+      (response) => {
+        console.log(response.status, response.data);
+        window.location.replace(response.data);
+      },
+      (error) => {
+        console.log(error);
+      }
+    );
   };
 
   const handleClickMomo = () => {
@@ -308,7 +392,8 @@ const ScanRFID = ({ productList }) => {
     const body = {
       amount: total,
     };
-    axios.post("http://localhost:8000/api/checkoutmomo/qrcode", body).then(
+    const url = BE_URL + "/api/checkoutmomo/qrcode";
+    axios.post(url, body).then(
       async (response) => {
         console.log(response);
         await delay(2000);
@@ -324,7 +409,8 @@ const ScanRFID = ({ productList }) => {
     const body = {
       amount: total,
     };
-    axios.post("http://localhost:8000/api/checkoutmomo/atm", body).then(
+    const url = BE_URL + "/api/checkoutmomo/atm";
+    axios.post(url, body).then(
       async (response) => {
         console.log(response);
         await delay(2000);
@@ -342,14 +428,23 @@ const ScanRFID = ({ productList }) => {
   };
 
   const handleClickSubmit = () => {
-    if (cartID != "") {
-      const url = "http://localhost:8000/api/cart/verify/" + cartID;
+    if (cartID !== "") {
+      const url = BE_URL + "/api/cart/verify/" + cartID;
       axios.get(url).then(
         async (response) => {
+          setScan(true);
+          window.localStorage.setItem("checkScan", JSON.stringify(true));
+          let message = "start to scan " + checkoutCounter;
+          client.publish("CheckoutRFID", message);
+          client.subscribe(checkoutCounter);
+          setProductData(response.data.cartItem);
+          const setListRFID = new Set(response.data.RFID);
+          setProductScan(setListRFID);
+          setTotal(Number(response.data.totalPrice));
           console.log(response);
         },
         (error) => {
-          console.log(error);
+          console.log("err", error);
         }
       );
     }
@@ -357,7 +452,37 @@ const ScanRFID = ({ productList }) => {
 
   return (
     <div>
-      {scan == false ? (
+      {errorScan === true ? (
+        <>
+          <Modal isOpen={errorScan} style={unsuccessStyles} ariaHideApp={false}>
+            <img
+              style={{
+                height: "40px",
+                width: "50px",
+                display: "block",
+                textAlign: "center",
+                marginLeft: "auto",
+                marginRight: "auto",
+              }}
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Cross_red_circle.svg/1200px-Cross_red_circle.svg.png"
+            ></img>
+            <p
+              style={{
+                textAlign: "center",
+                color: "red",
+                fontSize: "16px",
+                fontWeight: "bold",
+                marginTop: "23px",
+              }}
+            >
+              Invalid Item
+            </p>
+          </Modal>
+        </>
+      ) : (
+        <></>
+      )}
+      {scan === false ? (
         <div>
           <div
             style={{
@@ -457,7 +582,7 @@ const ScanRFID = ({ productList }) => {
                       placeholder="CartID"
                       helperText="CartID From Mobile Cart"
                       onChange={(e) => {
-                        if (e.target.value == "") {
+                        if (e.target.value === "") {
                           setErrorCart(false);
                         }
                         setCartID(e.target.value);
@@ -535,7 +660,7 @@ const ScanRFID = ({ productList }) => {
           >
             <h1>Self Checkout Item List</h1>
           </div>
-          {productData.length == 0 ? (
+          {productData.length === 0 ? (
             <div
               style={{
                 display: "flex",
@@ -543,13 +668,15 @@ const ScanRFID = ({ productList }) => {
                 justifyContent: "center",
               }}
             >
-              <img height={250} src={imageScan}></img>
+              <div>
+                <CheckoutInstruction />
+              </div>
               {scanSound === false ? (
                 <>
                   <div
                     style={{
                       position: "absolute",
-                      top: "50%",
+                      top: "80%",
                       left: "50%",
                       transform: "translate(-50%, -50%)",
                       display: "block",
@@ -559,10 +686,9 @@ const ScanRFID = ({ productList }) => {
                       style={{ marginTop: "40%" }}
                       onClick={() => handleTurnOnAudio()}
                     >
-                      <h2> Turn on Scan Sound</h2>
                       <img
-                        style={{ width: "200px", height: "200px" }}
-                        src="https://static.vecteezy.com/system/resources/previews/011/893/995/original/neumorphic-speaker-icon-neumorphism-speaker-button-free-png.png"
+                        style={{ width: "300px", height: "200px" }}
+                        src="https://th.bing.com/th/id/R.d124b43c4d7cb0fc45418947fb58e0cd?rik=AJfpSXpHLICvIw&pid=ImgRaw&r=0"
                         alt="my image"
                       />
                     </Button>
@@ -574,14 +700,15 @@ const ScanRFID = ({ productList }) => {
             </div>
           ) : (
             <div>
-              {continueScan == false ? (
+              {continueScan === false ? (
                 <div>
                   <h4
                     style={{
                       position: "absolute",
                       top: "40%",
-                      left: "50%",
+                      left: "52%",
                       transform: "translate(-50%, -50%)",
+                      width: "300px",
                     }}
                   >
                     You have scanned some items
@@ -592,6 +719,7 @@ const ScanRFID = ({ productList }) => {
                       top: "50%",
                       left: "50%",
                       transform: "translate(-50%, -50%)",
+                      width: "200px",
                     }}
                   >
                     <Button
@@ -692,7 +820,7 @@ const ScanRFID = ({ productList }) => {
                             display: "flex",
                           }}
                         >
-                          {backButton == true ? (
+                          {backButton === true ? (
                             <>
                               {" "}
                               <Button
@@ -728,6 +856,7 @@ const ScanRFID = ({ productList }) => {
                                   src="https://avatars.githubusercontent.com/u/36770798?s=280&v=4"
                                   width={100}
                                   height={100}
+                                  alt="description"
                                 ></img>
                               </Button>
                               {clickMomo === true ? (
@@ -760,6 +889,7 @@ const ScanRFID = ({ productList }) => {
                                         src="https://t3.ftcdn.net/jpg/02/23/88/58/360_F_223885881_Zotk7yyvWJDvq6iWq2A9XU60iVJEnrzC.jpg"
                                         width={80}
                                         height={60}
+                                        alt="description"
                                       ></img>
                                     </Button>
 
@@ -788,6 +918,7 @@ const ScanRFID = ({ productList }) => {
                                         src="https://th.bing.com/th/id/OIP.2KgJVfVl-6IQVRasNvbCyQHaHa?pid=ImgDet&rs=1"
                                         width={80}
                                         height={60}
+                                        alt="description"
                                       ></img>
                                     </Button>
                                   </div>
@@ -816,6 +947,7 @@ const ScanRFID = ({ productList }) => {
                                       src="https://play-lh.googleusercontent.com/o-_z132f10zwrco4NXk4sFqmGylqXBjfcwR8-wK0lO1Wk4gzRXi4IZJdhwVlEAtpyQ"
                                       width={100}
                                       height={100}
+                                      alt="description"
                                     ></img>
                                   </Button>
                                 </>
@@ -842,6 +974,7 @@ const ScanRFID = ({ productList }) => {
                                   src="https://avatars.githubusercontent.com/u/36770798?s=280&v=4"
                                   width={100}
                                   height={100}
+                                  alt="description"
                                 ></img>
                               </Button>
 
@@ -875,6 +1008,7 @@ const ScanRFID = ({ productList }) => {
                                         src="https://t3.ftcdn.net/jpg/02/23/88/58/360_F_223885881_Zotk7yyvWJDvq6iWq2A9XU60iVJEnrzC.jpg"
                                         width={80}
                                         height={60}
+                                        alt="description"
                                       ></img>
                                     </Button>
 
@@ -903,6 +1037,7 @@ const ScanRFID = ({ productList }) => {
                                         src="https://th.bing.com/th/id/OIP.2KgJVfVl-6IQVRasNvbCyQHaHa?pid=ImgDet&rs=1"
                                         width={80}
                                         height={60}
+                                        alt="description"
                                       ></img>
                                     </Button>
                                   </div>
@@ -931,6 +1066,7 @@ const ScanRFID = ({ productList }) => {
                                       src="https://play-lh.googleusercontent.com/o-_z132f10zwrco4NXk4sFqmGylqXBjfcwR8-wK0lO1Wk4gzRXi4IZJdhwVlEAtpyQ"
                                       width={100}
                                       height={100}
+                                      alt="description"
                                     ></img>
                                   </Button>
                                 </>

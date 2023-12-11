@@ -1,6 +1,5 @@
 import React,{useState} from 'react'
 import "./WriteProduct.css";
-import { Buffer } from 'buffer';
 import axios from 'axios';
 import soundScanned from "../../assets/Sound/Barcode-scanner-beep-sound.mp3"
 var mqtt = require("mqtt");
@@ -41,7 +40,7 @@ const WriteProduct = ({setOpenModal,product}) => {
 
   client.on('message', async function (topic, payload, packet) {
     let check = await checkInclude(payload.toString(),itemScaned)
-    if (check == false){
+    if (check === false){
       await addToList(payload.toString())
       audio.play();
     }
@@ -117,7 +116,7 @@ const WriteProduct = ({setOpenModal,product}) => {
 
             <img src={product.image} />
         </div>
-        {writed == false ? (        
+        {writed === false ? (        
             <div style={{display:"flex",marginLeft:"22%",marginTop:"5px"}}>
             <button className="addToCartBttn" onClick={handleStartWrite}>
             Write
