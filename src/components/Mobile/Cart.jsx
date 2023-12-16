@@ -670,7 +670,7 @@ const Cart = ({ productList, BE_URL }) => {
               justifyContent: "center",
               alignItems: "center",
               display: "flex",
-              marginTop: "10%",
+              marginTop: "0%",
             }}
           >
             <h1>Cart 🛒 </h1>

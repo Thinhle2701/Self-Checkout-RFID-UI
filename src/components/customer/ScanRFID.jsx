@@ -64,12 +64,12 @@ var mqtt = require("mqtt");
 // const connectUrl = `ws://broker.hivemq.com:8000/mqtt`;
 // const connectUrl = `ws://test.mosquitto.org:8080/mqtt`;
 // const connectUrl = `wss://mqtt.flespi.io:443`
-const connectUrl = `wss://broker.emqx.io:8084/mqtt`
+const connectUrl = `wss://broker.emqx.io:8084/mqtt`;
 const audio = new Audio(soundScanned);
 const client = mqtt.connect(connectUrl, {
   clientId: "emqx_cloud_" + Math.random().toString(16).substring(2, 8),
-  username: 'thinh',
-  password: 'thinhbeo2801'
+  username: "thinh",
+  password: "thinhbeo2801",
 });
 client.setMaxListeners(100);
 // client.on('connect', function () {
