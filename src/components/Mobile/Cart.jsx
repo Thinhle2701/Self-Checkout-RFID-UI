@@ -746,7 +746,8 @@ const Cart = ({ productList, BE_URL }) => {
                         backgroundColor: "red",
                         border: "1px solid red",
                         color: "white",
-                        marginTop: "50px",
+                        marginTop: "20px",
+                        marginLeft: "70px",
                       }}
                       className="addToCartBttn"
                       onClick={() => handleTurnOnAudio()}
