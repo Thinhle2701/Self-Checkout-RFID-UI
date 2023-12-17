@@ -364,6 +364,11 @@ const Cart = ({ productList, BE_URL }) => {
     window.location.reload();
   };
 
+  const handleRestart = async () => {
+    await window.localStorage.clear();
+    await window.location.reload();
+  };
+
   function addItemScanToList(scanedItem) {
     console.log(scanedItem);
     if (productData.length === 0) {
@@ -718,41 +723,63 @@ const Cart = ({ productList, BE_URL }) => {
             <div>
               {continueScan === false ? (
                 <div>
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "40%",
-                      left: "75%",
-                      transform: "translate(-50%, -50%)",
-                      width: "400px",
-                    }}
-                  >
-                    <Button
-                      variant="contained"
+                  <div>
+                    <h4
                       style={{
-                        fontSize: "17px",
-                        backgroundColor: "red",
-                        border: "1px solid red",
-                        color: "white",
+                        position: "absolute",
+                        top: "30%",
+                        left: "60%",
+                        transform: "translate(-50%, -50%)",
+                        width: "400px",
+                        marginLeft: "20px",
+                        fontSize: "20px",
                       }}
-                      className="addToCartBttn"
-                      onClick={() => handleTurnOnAudio()}
                     >
-                      Continue to Scan
-                    </Button>
+                      You have scanned some items
+                    </h4>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "60%",
+                        transform: "translate(-50%, -50%)",
+                        width: "400px",
+                        display: "flex",
+                      }}
+                    >
+                      <button
+                        style={{
+                          fontSize: "15px",
+                          //backgroundColor: "#0000cc",
+                          color: "#F76C01",
+                          border: "2px solid #F76C01",
+                          marginRight: "50px",
+                          backgroundColor: "white",
+                          borderRadius: "10px",
+                        }}
+                        onClick={() => handleRestart()}
+                      >
+                        <div>
+                          {" "}
+                          <p style={{ fontSize: "20px" }}>⌛</p>
+                          <p style={{ fontWeight: "bold" }}>Restart Scanning</p>
+                        </div>
+                      </button>
+                      <button
+                        style={{
+                          fontSize: "15px",
+                          backgroundColor: "white",
+                          borderRadius: "10px",
+                          color: "#019A79",
+                          border: "2px solid #019A79",
+                        }}
+                        onClick={() => handleTurnOnAudio()}
+                      >
+                        <p style={{ fontSize: "20px" }}>⭐</p>
+                        <p style={{ fontWeight: "bold" }}>Continue to Scan</p>
+                      </button>
+                    </div>
                   </div>
-                  <h4
-                    style={{
-                      marginLeft: "100px",
-                      position: "absolute",
-                      top: "47%",
-                      left: "48%",
-                      transform: "translate(-50%, -50%)",
-                      width: "400px",
-                    }}
-                  >
-                    You have scanned some items
-                  </h4>
                 </div>
               ) : (
                 <div style={{ width: "60%" }}>

@@ -353,6 +353,11 @@ const ScanRFID = ({ productList, BE_URL }) => {
     audio.play();
   }
 
+  const handleRestart = async () => {
+    await window.localStorage.clear();
+    await window.location.reload();
+  }
+
   client.on("message", async function (topic, payload, packet) {
     //var obj = JSON.parse(payload.toString())
 
@@ -705,10 +710,11 @@ const ScanRFID = ({ productList, BE_URL }) => {
                   <h4
                     style={{
                       position: "absolute",
-                      top: "40%",
+                      top: "30%",
                       left: "52%",
                       transform: "translate(-50%, -50%)",
                       width: "300px",
+                      fontSize: "20px",
                     }}
                   >
                     You have scanned some items
@@ -717,24 +723,38 @@ const ScanRFID = ({ productList, BE_URL }) => {
                     style={{
                       position: "absolute",
                       top: "50%",
-                      left: "50%",
+                      left: "57%",
                       transform: "translate(-50%, -50%)",
-                      width: "200px",
+                      width: "700px",
+                      display: "flex",
                     }}
                   >
-                    <Button
-                      variant="contained"
+                    <button
                       style={{
-                        fontSize: "17px",
-                        backgroundColor: "red",
-                        border: "1px solid red",
-                        color: "white",
+                        fontSize: "20px",
+                        // backgroundColor: "#0000cc",
+                        // color: "white",
+                        marginRight: "100px",
+                      }}
+                      className="addToCartBttn"
+                      onClick={() => handleRestart()}
+                    >
+                      <div>
+                        {" "}
+                        <p style={{ fontSize: "40px" }}>⌛</p>
+                        <p>Restart Scanning</p>
+                      </div>
+                    </button>
+                    <button
+                      style={{
+                        fontSize: "20px",
                       }}
                       className="addToCartBttn"
                       onClick={() => handleTurnOnAudio()}
                     >
-                      Continue to Scan
-                    </Button>
+                      <p style={{ fontSize: "40px" }}>⭐</p>
+                      <p>Continue to Scan</p>
+                    </button>
                   </div>
                 </div>
               ) : (
