@@ -718,23 +718,11 @@ const Cart = ({ productList, BE_URL }) => {
             <div>
               {continueScan === false ? (
                 <div>
-                  <h4
-                    style={{
-                      marginLeft: "100px",
-                      position: "absolute",
-                      top: "40%",
-                      left: "35%",
-                      transform: "translate(-50%, -50%)",
-                      width: "400px",
-                    }}
-                  >
-                    You have scanned some items
-                  </h4>
                   <div
                     style={{
                       position: "absolute",
-                      top: "60%",
-                      left: "50%",
+                      top: "40%",
+                      left: "75%",
                       transform: "translate(-50%, -50%)",
                       width: "400px",
                     }}
@@ -746,8 +734,6 @@ const Cart = ({ productList, BE_URL }) => {
                         backgroundColor: "red",
                         border: "1px solid red",
                         color: "white",
-                        marginTop: "20px",
-                        marginLeft: "70px",
                       }}
                       className="addToCartBttn"
                       onClick={() => handleTurnOnAudio()}
@@ -755,6 +741,18 @@ const Cart = ({ productList, BE_URL }) => {
                       Continue to Scan
                     </Button>
                   </div>
+                  <h4
+                    style={{
+                      marginLeft: "100px",
+                      position: "absolute",
+                      top: "47%",
+                      left: "48%",
+                      transform: "translate(-50%, -50%)",
+                      width: "400px",
+                    }}
+                  >
+                    You have scanned some items
+                  </h4>
                 </div>
               ) : (
                 <div style={{ width: "60%" }}>
