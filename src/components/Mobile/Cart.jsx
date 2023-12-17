@@ -758,11 +758,12 @@ const Cart = ({ productList, BE_URL }) => {
                 <div style={{ width: "60%" }}>
                   <div
                     style={{
-                      display: "block",
-                      position: "absolute",
-                      top: "45%",
-                      left: "50%",
-                      transform: "translate(-50%, -50%)",
+                      // display: "block",
+                      // position: "absolute",
+                      // top: "50%",
+                      // left: "50%",
+                      // transform: "translate(-50%, -50%)",
+                      marginTop: "30px",
                     }}
                   >
                     <Table
@@ -777,16 +778,15 @@ const Cart = ({ productList, BE_URL }) => {
                   </div>
                   <h2
                     style={{
-                      display: "block",
-                      position: "absolute",
-                      top: "80%",
-                      left: "25%",
+                      width: "400px",
+                      marginTop: "20px",
+                      marginLeft: "36%",
                     }}
                   >
                     $Total: {totalVND}
                     <div
                       style={{
-                        marginTop: "10%",
+                        marginTop: "5%",
                       }}
                     >
                       <Button
