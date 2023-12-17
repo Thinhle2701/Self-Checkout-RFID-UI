@@ -117,7 +117,7 @@ const DataTable = ({
   ];
   console.log(products);
   return (
-    <div style={{ height: 510, width: 412 }}>
+    <div style={{ height: 400, width: 412 }}>
       <DataGrid
         rows={products}
         columns={columns}
