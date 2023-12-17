@@ -22,8 +22,9 @@ import Orders from "./components/Orders/Orders";
 
 import axios from "axios";
 import { Buffer } from "buffer";
-const urlBE = "http://localhost:8000";
-const urlFE = "http://localhost:3000";
+
+//const urlBE = "http://localhost:8000";
+const urlBE = "https://rfid-checkout-0c81509e632e.herokuapp.com";
 function App() {
   const [products, setProducts] = useState([]);
   const [adminLogin, setAdminLogin] = useState(true);
