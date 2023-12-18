@@ -356,7 +356,7 @@ const ScanRFID = ({ productList, BE_URL }) => {
   const handleRestart = async () => {
     await window.localStorage.clear();
     await window.location.reload();
-  }
+  };
 
   client.on("message", async function (topic, payload, packet) {
     //var obj = JSON.parse(payload.toString())
