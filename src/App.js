@@ -19,12 +19,13 @@ import Inventory from "./components/Inventory/Inventory";
 import Invoice from "./components/Invoice/Invoice";
 import ForgotPassword from "./components/Users/ForgotPassword";
 import Orders from "./components/Orders/Orders";
+import Camera from "./components/Camera/Camera";
 
 import axios from "axios";
 import { Buffer } from "buffer";
 
 //const urlBE = "http://localhost:8000";
-const urlBE = "https://adorable-jay-top-coat.cyclic.app";
+const urlBE = "https://self-checkout-backend.onrender.com/";
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -206,6 +207,12 @@ function App() {
             path="/user/forgotpassword"
             element={<ForgotPassword BE_URL={urlBE} />}
           ></Route>
+
+          {/* <Route
+            exact
+            path="/camera"
+            element={<Camera BE_URL={urlBE} />}
+          ></Route> */}
         </Routes>
       </Router>
     </div>
