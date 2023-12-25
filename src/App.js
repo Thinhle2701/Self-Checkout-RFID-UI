@@ -24,8 +24,8 @@ import Camera from "./components/Camera/Camera";
 import axios from "axios";
 import { Buffer } from "buffer";
 
-//const urlBE = "http://localhost:8000";
-const urlBE = "https://self-checkout-backend.onrender.com";
+const urlBE = "http://localhost:8000";
+//const urlBE = "https://self-checkout-backend.onrender.com";
 
 function App() {
   const [products, setProducts] = useState([]);
