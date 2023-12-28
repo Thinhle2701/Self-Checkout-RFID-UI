@@ -384,10 +384,35 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                         <th>Total Amount :</th>
                         <td>{orderBill.totalPrice}</td>
                       </tr>
+                      <tr></tr>
                     </table>
                   </Col>
                 </Row>
 
+                <div>
+                  {" "}
+                  <Button
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginLeft: "45%",
+                      fontSize: "20px",
+                      backgroundColor: "black",
+                      width: "200px",
+                    }}
+                    variant="contained"
+                    onClick={() => {
+                      const currentURL = window.location.href;
+                      const newURL = currentURL.split(window.location.pathname);
+                      console.log(newURL);
+                      const backURL = newURL[0] + "/customer";
+                      window.location.replace(backURL);
+                    }}
+                  >
+                    Finish
+                  </Button>
+                </div>
                 {sendMailModal === true ? (
                   <>
                     <Modal
