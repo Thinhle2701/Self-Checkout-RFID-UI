@@ -115,6 +115,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                   })
                   .then(
                     (response) => {
+                      console.log(response);
                       if (response.data.vnp_TransactionStatus === "00") {
                         const cartList = JSON.parse(
                           window.localStorage.getItem("Cart")
@@ -180,7 +181,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                                 cardHolder: response.data.vnp_CardHolder,
                                 transDate: res.data.data.transDate,
                                 paymentMethod: res.data.data.paymentMethod,
-                                orderDate: res.data.data.orderDate
+                                orderDate: res.data.data.orderDate,
                               };
                               await setOrderBill(orderCreated);
                               await setItems(ordItem);
