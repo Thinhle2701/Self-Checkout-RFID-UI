@@ -365,6 +365,7 @@ const Cart = ({ productList, BE_URL }) => {
   };
 
   const handleRestart = async () => {
+    await client.unsubscribe(mobileCart);
     await window.localStorage.clear();
     await window.location.reload();
   };

@@ -354,9 +354,9 @@ const ScanRFID = ({ productList, BE_URL }) => {
   }
 
   const handleRestart = async () => {
+    await client.unsubscribe(checkoutCounter);
     await window.localStorage.clear();
     await window.location.reload();
-    await client.unsubscribe(checkoutCounter);
   };
 
   client.on("message", async function (topic, payload, packet) {
