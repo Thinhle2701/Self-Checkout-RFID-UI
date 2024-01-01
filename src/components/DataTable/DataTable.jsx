@@ -1,14 +1,17 @@
 import React from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Button } from "@mui/material";
-
+import axios from "axios";
 const DataTable = ({
+  BE_URL,
   products,
   setProductValue,
   RFIDList,
   setRFIDList,
   totalValue,
   setTotalValue,
+  cartID,
+  setItemScanned,
 }) => {
   const columns = [
     {
@@ -70,7 +73,6 @@ const DataTable = ({
           onClick={async (e) => {
             var total = totalValue;
             let newTotal = Number(total) - Number(params.row.price);
-            await window.localStorage.setItem("Total", newTotal);
             await setTotalValue(newTotal);
             var retrieveCart = [...products];
             var newList = [...RFIDList];
@@ -100,9 +102,34 @@ const DataTable = ({
                 }
               }
             }
-            var newSet = new Set(newList);
-            await setProductValue(retrieveCart);
-            await setRFIDList(newSet);
+            // console.log(retrieveCart);
+
+            // var newSet = new Set(newList);
+            // console.log(newSet);
+            // await setProductValue(retrieveCart);
+            // await setRFIDList(newSet);
+            const url = BE_URL + "/api/checkoutcart/update_cart";
+            axios
+              .post(url, {
+                cartID: cartID,
+                cartItem: retrieveCart,
+                RFID: newList,
+                totalPrice: newTotal,
+              })
+              .then(
+                async (response) => {
+                  await setProductValue(response.data.cartItem);
+                  const setListRFID = new Set(response.data.RFID);
+                  await setRFIDList(setListRFID);
+                  await setTotalValue(Number(response.data.totalPrice));
+                  if (response.data.cartItem.length === 0) {
+                    setItemScanned(false);
+                  }
+                },
+                (error) => {
+                  console.log("err", error);
+                }
+              );
           }}
         >
           X

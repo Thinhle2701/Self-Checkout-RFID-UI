@@ -20,6 +20,7 @@ import Invoice from "./components/Invoice/Invoice";
 import ForgotPassword from "./components/Users/ForgotPassword";
 import Orders from "./components/Orders/Orders";
 import Camera from "./components/Camera/Camera";
+import SSE from "./components/SeverSendEvent/SSE";
 
 import axios from "axios";
 import { Buffer } from "buffer";
@@ -201,6 +202,8 @@ function App() {
             path="/review_invoice"
             element={<Invoice BE_URL={urlBE} />}
           ></Route>
+
+          <Route exact path="/sse" element={<SSE BE_URL={urlBE} />}></Route>
 
           <Route
             exact

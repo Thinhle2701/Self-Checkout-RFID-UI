@@ -82,6 +82,7 @@ client.setMaxListeners(100);
 // })
 
 const ScanRFID = ({ productList, BE_URL }) => {
+  const [itemScanned, setItemScanned] = useState(false);
   const [checkoutCounter, setCheckoutCounter] = useState("b2211");
   const [scan, setScan] = useState(false);
   const [productScan, setProductScan] = useState(() => new Set());
@@ -96,15 +97,114 @@ const ScanRFID = ({ productList, BE_URL }) => {
   const [cartID, setCartID] = useState("");
   const [errorCart, setErrorCart] = useState(false);
   const [errorScan, setErrorScan] = useState(false);
+  const [mobileCart, setMobileCart] = useState("");
 
   const handleStartScan = () => {
-    setScan(true);
-    window.localStorage.setItem("checkScan", JSON.stringify(true));
-    let message = "start to scan " + checkoutCounter;
-    console.log(message);
-    client.publish("ReadRFIDTag", message);
-    client.subscribe(checkoutCounter);
+    const url = BE_URL + "/api/checkoutcart/add_cart";
+    axios.post(url, { deivceID: checkoutCounter }).then(
+      async (response) => {
+        setCartID(response.data.data.cartID);
+        console.log(response);
+        let message =
+          "start to scan " +
+          checkoutCounter +
+          " " +
+          "with cartID " +
+          response.data.data.cartID;
+        console.log(message);
+        await client.publish("CheckoutReadRFIDTag", message);
+        setScan(true);
+        window.localStorage.setItem("checkScan", true);
+        window.localStorage.setItem(
+          "cartID",
+          JSON.stringify(response.data.data.cartID)
+        );
+
+        // client.subscribe(checkoutCounter);
+      },
+      (error) => {
+        console.log("err", error);
+      }
+    );
   };
+
+  const handleStartScanExistCart = (cartID) => {
+    const url = BE_URL + "/api/checkoutcart/verify_cart_expire";
+    axios.post(url, { cartID: cartID }).then(
+      async (response) => {
+        if (response.data === "expire cart") {
+          console.log("expired cart");
+          handleRestart();
+        } else {
+          console.log(response);
+          setCartID(response.data.cartID);
+          setScan(true);
+          setContinueScan(false);
+          let message =
+            "stop to scan " +
+            checkoutCounter +
+            " " +
+            "with cartID " +
+            response.data.cartID;
+          console.log(message);
+          await client.publish("CheckoutReadRFIDTag", message);
+
+          // console.log(response);
+        }
+      },
+      (error) => {
+        console.log("err", error);
+      }
+    );
+  };
+
+  useEffect(() => {
+    const cartIDStorage = window.localStorage.getItem("cartID");
+    const checkScanStorage = window.localStorage.getItem("checkScan");
+    if (
+      JSON.parse(cartIDStorage) === null &&
+      JSON.parse(checkScanStorage) === null
+    ) {
+      //handleRestart();
+      console.log("new");
+    } else {
+      if (JSON.parse(checkScanStorage) === true && cartID === "") {
+        handleStartScanExistCart(JSON.parse(cartIDStorage));
+      }
+    }
+    if (cartID !== "") {
+      const url = BE_URL + "/api/sse/" + cartID;
+      console.log(url);
+      const source = new EventSource(url);
+      source.addEventListener("open", () => {
+        console.log("SSE opened!");
+      });
+      source.addEventListener("message", async (e) => {
+        //console.log(e.data);
+        const data = await JSON.parse(e.data);
+        if (data.scanned === true) {
+          const rfidList = Array.from(productScan);
+          if (rfidList.length != data.RFID.length) {
+            console.log(data.cartItem);
+            await setProductData(data.cartItem);
+            const setListRFID = new Set(data.RFID);
+            await setProductScan(setListRFID);
+            await setTotal(Number(data.totalPrice));
+            setItemScanned(true);
+            audio.play();
+          }
+        }
+      });
+      source.addEventListener("error", (e) => {
+        console.error("Error: ", e);
+      });
+      return () => {
+        source.close();
+      };
+    }
+  }, [cartID, productData]);
+  console.log(productData);
+
   const totalVND = new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -113,225 +213,6 @@ const ScanRFID = ({ productList, BE_URL }) => {
   const removeItemSet = (foo) => {
     setProductScan((prev) => new Set([...prev].filter((x) => x !== foo)));
   };
-
-  function updateLocalStorage() {
-    const scanList = Array.from(productScan);
-    const totalStorage = window.localStorage.getItem("Total");
-    if (JSON.parse(totalStorage) === null) {
-      window.localStorage.setItem("RFID", JSON.stringify(scanList));
-      window.localStorage.setItem("Cart", JSON.stringify(productData));
-      window.localStorage.setItem("Total", JSON.stringify(total));
-    } else {
-      const totalStorageValue = JSON.parse(totalStorage);
-      if (Number(totalStorageValue) > Number(total)) {
-        console.log("update state");
-        setContinueScan(false);
-        const RFIDList = JSON.parse(window.localStorage.getItem("RFID"));
-        for (let i = 0; i < RFIDList.length; i++) {
-          addItem(RFIDList[i]);
-        }
-        const cartList = window.localStorage.getItem("Cart");
-        setProductData(JSON.parse(cartList));
-        const totalStorage = window.localStorage.getItem("Total");
-        setTotal(JSON.parse(totalStorage));
-      } else {
-        console.log("update storage");
-        window.localStorage.setItem("RFID", JSON.stringify(scanList));
-        window.localStorage.setItem("Cart", JSON.stringify(productData));
-        window.localStorage.setItem("Total", total);
-        const checkCartExpire = JSON.parse(
-          window.localStorage.getItem("CartExpireTime")
-        );
-        if (checkCartExpire === null) {
-          const cartTime = new Date().getTime();
-          window.localStorage.setItem("CartExpireTime", cartTime);
-        }
-      }
-    }
-  }
-
-  useEffect(() => {
-    const checkScanned = window.localStorage.getItem("checkScan");
-
-    if (JSON.parse(checkScanned) !== null) {
-      setScan(JSON.parse(checkScanned));
-      if (JSON.parse(checkScanned)) {
-        const checkCartExpire = JSON.parse(
-          window.localStorage.getItem("CartExpireTime")
-        );
-        const currentTime = new Date().getTime();
-
-        const timeDifference = Math.abs(currentTime - checkCartExpire);
-        const hours = Math.floor(timeDifference / (1000 * 60 * 60));
-        const minutes = Math.floor(
-          (timeDifference % (1000 * 60 * 60)) / (1000 * 60)
-        );
-        console.log("m", minutes);
-        console.log("h", hours);
-        if (minutes < 30 && hours === 0) {
-          handleStartScan();
-          console.log("transfer storage to state");
-          const RFIDList = JSON.parse(window.localStorage.getItem("RFID"));
-          for (let i = 0; i < RFIDList.length; i++) {
-            addItem(RFIDList[i]);
-          }
-          const cartList = window.localStorage.getItem("Cart");
-          setProductData(JSON.parse(cartList));
-          const totalStorage = window.localStorage.getItem("Total");
-          setTotal(JSON.parse(totalStorage));
-        } else {
-          console.log("expire cart");
-          window.localStorage.clear();
-          window.location.reload();
-        }
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    updateLocalStorage();
-    const interval = setInterval(async () => {
-      const scanList = Array.from(productScan);
-      // console.log("array: ",productData.length)
-      // console.log("set: ",scanList.length)
-      var uuidList = [];
-      for (let i = 0; i < productData.length; i++) {
-        uuidList = uuidList.concat(productData[i].uuid);
-      }
-      var difference = scanList.filter((x) => uuidList.indexOf(x) === -1);
-      if (difference.length > 0) {
-        if (productData.length === 0) {
-          for (let i = 0; i < scanList.length; i++) {
-            let proID = scanList[i].split("||")[1];
-            let uuid = scanList[i].split("||")[0];
-            //verifyRFID tag
-            const url = BE_URL + "/api/rfid/verifyTag";
-            axios
-              .post(url, {
-                uuid: uuid,
-                productID: proID,
-                // uuid: "12323",
-                // productID: "212321",
-              })
-              .then((res) => {
-                const tableID = "item_1";
-                var uuidArr = [];
-                uuidArr.push(scanList[i]);
-                var item = {
-                  id: tableID,
-                  itemnumber: i + 1,
-                  productID: res.data.productID,
-                  name: res.data.name,
-                  image: res.data.image,
-                  quantity: 1,
-                  price: res.data.price,
-                  uuid: uuidArr,
-                };
-                setProductData((oldArray) => [...oldArray, item]);
-                let newTotal = Number(total) + Number(item.price);
-                setTotal(newTotal);
-                const cartTime = new Date().getTime();
-                window.localStorage.setItem("CartExpireTime", cartTime);
-              })
-              .catch(async (error) => {
-                console.log(error.response);
-                setErrorScan(true);
-                if (error.response.status === 400) {
-                  await removeItemSet(scanList[i]);
-                  await delay(1000);
-                  setErrorScan(false);
-                }
-              });
-          }
-        } else {
-          var arrUUID = [];
-          for (let i = 0; i < productData.length; i++) {
-            arrUUID = arrUUID.concat(productData[i].uuid);
-          }
-
-          var newItem = [];
-          for (let i = 0; i < scanList.length; i++) {
-            if (arrUUID.includes(scanList[i]) === false) {
-              newItem.push(scanList[i]);
-            }
-          }
-
-          for (let i = 0; i < newItem.length; i++) {
-            let proID = newItem[i].split("||")[1];
-            let uuid = newItem[i].split("||")[0];
-
-            //verifyRFID tag
-            const url = BE_URL + "/api/rfid/verifyTag";
-            axios
-              .post(url, {
-                uuid: uuid,
-                productID: proID,
-              })
-              .then((res) => {
-                const index = productData.findIndex((object) => {
-                  return object.productID === proID;
-                });
-                if (index >= 0) {
-                  console.log("add quantity");
-                  var retrieveCart = [...productData];
-
-                  retrieveCart[index].price =
-                    Number(retrieveCart[index].price) +
-                    Number(retrieveCart[index].price) /
-                      Number(retrieveCart[index].quantity);
-                  retrieveCart[index].quantity =
-                    retrieveCart[index].quantity + 1;
-
-                  let arrayUUID = retrieveCart[index].uuid;
-                  arrayUUID.push(newItem[i]);
-                  retrieveCart[index].uuid = arrayUUID;
-                  setProductData(retrieveCart);
-                  console.log("price ", Number(retrieveCart[index].price));
-                  console.log("qty", Number(retrieveCart[index].quantity));
-                  let newTotal =
-                    Number(total) +
-                    Number(retrieveCart[index].price) /
-                      Number(retrieveCart[index].quantity);
-                  console.log("new total: ", newTotal);
-                  setTotal(newTotal);
-                  const cartTime = new Date().getTime();
-                  window.localStorage.setItem("CartExpireTime", cartTime);
-                } else {
-                  const tableID = "item_" + Number(productData.length + 1);
-                  const uuidArr = [];
-                  uuidArr.push(newItem[i]);
-                  var itemObj = {
-                    id: tableID,
-                    itemnumber: Number(productData.length + 1),
-                    productID: res.data.productID,
-                    name: res.data.name,
-                    image: res.data.image,
-                    quantity: 1,
-                    price: res.data.price,
-                    uuid: uuidArr,
-                  };
-                  setProductData((oldArray) => [...oldArray, itemObj]);
-                  let newTotal = Number(total) + Number(itemObj.price);
-                  setTotal(newTotal);
-                  const cartTime = new Date().getTime();
-                  window.localStorage.setItem("CartExpireTime", cartTime);
-                }
-              })
-              .catch(async (error) => {
-                console.log(error.response);
-                setErrorScan(true);
-                if (error.response.status === 400) {
-                  await removeItemSet(scanList[i]);
-                  await delay(1000);
-                  setErrorScan(false);
-                }
-              });
-          }
-        }
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [productScan, productData, total, productList]);
 
   const addItem = async (item) => {
     if (item === "") {
@@ -347,11 +228,15 @@ const ScanRFID = ({ productList, BE_URL }) => {
   function handleOnchange(event) {
     setCheckoutCounter(event.target.value);
   }
-  function handleTurnOnAudio() {
+  const handleTurnOnAudio = async () => {
+    audio.play();
+    let message =
+      "start to scan " + checkoutCounter + " " + "with cartID " + cartID;
+    console.log(message);
+    await client.publish("CheckoutReadRFIDTag", message);
     setScanSound(true);
     setContinueScan(true);
-    audio.play();
-  }
+  };
 
   const handleRestart = async () => {
     await client.unsubscribe(checkoutCounter);
@@ -429,25 +314,36 @@ const ScanRFID = ({ productList, BE_URL }) => {
   };
 
   const handleClickCancleInput = () => {
-    setCartID("");
+    setMobileCart("");
     setInputCartModal(false);
   };
 
   const handleClickSubmit = () => {
-    if (cartID !== "") {
-      const url = BE_URL + "/api/cart/verify/" + cartID;
-      axios.get(url).then(
+    if (mobileCart !== "") {
+      const url = BE_URL + "/api/checkoutcart/verify/" + mobileCart;
+      axios.post(url, { deivceID: checkoutCounter }).then(
         async (response) => {
+          console.log(response.data);
+          await setCartID(response.data.cartID);
+          await setProductData(response.data.cartItem);
+          const setListRFID = new Set(response.data.RFID);
+          await setProductScan(setListRFID);
+          await setTotal(Number(response.data.totalPrice));
           setScan(true);
           window.localStorage.setItem("checkScan", JSON.stringify(true));
-          let message = "start to scan " + checkoutCounter;
-          client.publish("CheckoutRFID", message);
-          client.subscribe(checkoutCounter);
-          setProductData(response.data.cartItem);
-          const setListRFID = new Set(response.data.RFID);
-          setProductScan(setListRFID);
-          setTotal(Number(response.data.totalPrice));
-          console.log(response);
+          window.localStorage.setItem(
+            "cartID",
+            JSON.stringify(response.data.cartID)
+          );
+          let message =
+            "start to scan " +
+            checkoutCounter +
+            " " +
+            "with cartID " +
+            response.data.cartID;
+          console.log(message);
+          await client.publish("CheckoutReadRFIDTag", message);
+          setItemScanned(true);
         },
         (error) => {
           console.log("err", error);
@@ -591,7 +487,7 @@ const ScanRFID = ({ productList, BE_URL }) => {
                         if (e.target.value === "") {
                           setErrorCart(false);
                         }
-                        setCartID(e.target.value);
+                        setMobileCart(e.target.value);
                       }}
                     />
                   </div>
@@ -666,7 +562,7 @@ const ScanRFID = ({ productList, BE_URL }) => {
           >
             <h1>Self Checkout Item List</h1>
           </div>
-          {productData.length === 0 ? (
+          {itemScanned === false ? (
             <div
               style={{
                 display: "flex",
@@ -770,12 +666,15 @@ const ScanRFID = ({ productList, BE_URL }) => {
                     }}
                   >
                     <Table
+                      cartID={cartID}
+                      BE_URL={BE_URL}
                       products={productData}
                       setProductValue={setProductData}
                       RFIDList={productScan}
                       setRFIDList={setProductScan}
                       totalValue={total}
                       setTotalValue={setTotal}
+                      setItemScanned={setItemScanned}
                     />{" "}
                     <div></div>
                   </div>
