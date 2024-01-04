@@ -12,6 +12,7 @@ const DataTable = ({
   setTotalValue,
   cartID,
   setItemScanned,
+  setIsLoading,
 }) => {
   const columns = [
     {
@@ -71,9 +72,9 @@ const DataTable = ({
             backgroundColor: "red",
           }}
           onClick={async (e) => {
+            setIsLoading(true);
             var total = totalValue;
             let newTotal = Number(total) - Number(params.row.price);
-            await setTotalValue(newTotal);
             var retrieveCart = [...products];
             var newList = [...RFIDList];
 
@@ -118,11 +119,13 @@ const DataTable = ({
               })
               .then(
                 async (response) => {
-                  await setProductValue(response.data.cartItem);
-                  const setListRFID = new Set(response.data.RFID);
-                  await setRFIDList(setListRFID);
-                  await setTotalValue(Number(response.data.totalPrice));
-                  if (response.data.cartItem.length === 0) {
+                  console.log(response.data);
+                  // await setProductValue(response.data.cartItem);
+                  // const setListRFID = new Set(response.data.RFID);
+                  await setRFIDList(response.data.RFID);
+                  // await setTotalValue(Number(response.data.totalPrice));
+                  if (response.data.RFID.length === 0) {
+                    console.log("empty");
                     setItemScanned(false);
                   }
                 },

@@ -1,14 +1,17 @@
 import React from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Button } from "@mui/material";
-
+import axios from "axios";
 const DataTable = ({
+  BE_URL,
   products,
   setProductValue,
   RFIDList,
   setRFIDList,
   totalValue,
   setTotalValue,
+  setIsLoading,
+  cartID,
 }) => {
   const columns = [
     {
@@ -72,10 +75,9 @@ const DataTable = ({
               backgroundColor: "red",
             }}
             onClick={async (e) => {
+              setIsLoading(true);
               var total = totalValue;
               let newTotal = Number(total) - Number(params.row.price);
-              await window.localStorage.setItem("Total", newTotal);
-              await setTotalValue(newTotal);
               var retrieveCart = [...products];
               var newList = [...RFIDList];
 
@@ -104,9 +106,27 @@ const DataTable = ({
                   }
                 }
               }
-              var newSet = new Set(newList);
-              await setProductValue(retrieveCart);
-              await setRFIDList(newSet);
+              const url = BE_URL + "/api/cart/update_cart_item";
+              axios
+                .post(url, {
+                  cartID: cartID,
+                  cartItem: retrieveCart,
+                  RFID: newList,
+                  totalPrice: newTotal,
+                })
+                .then(
+                  async (response) => {
+                    console.log("deleted data: ", response.data);
+                    var newSet = new Set(response.data.RFID);
+                    await setProductValue(response.data.cartItem);
+                    await setRFIDList(newSet);
+                    await setTotalValue(response.data.totalPrice);
+                    setIsLoading(false);
+                  },
+                  (error) => {
+                    console.log("err", error);
+                  }
+                );
             }}
           >
             X

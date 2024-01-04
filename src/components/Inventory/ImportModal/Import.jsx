@@ -42,8 +42,15 @@ const Import = ({ urlAPI, setModalOpen, productList, userInfo }) => {
     setScan(true);
     let message = "start to scan " + importDevice;
     console.log(message);
-    client.publish("ReadRFIDTag", message);
+    client.publish("InventoryRFIDTag", message);
     client.subscribe(importDevice);
+  };
+
+  const handleStopScan = () => {
+    let message = "stop to scan " + importDevice;
+    console.log(message);
+    client.publish("InventoryRFIDTag", message);
+    client.unsubscribe(importDevice);
   };
 
   function handleTurnOnAudio() {
@@ -155,6 +162,7 @@ const Import = ({ urlAPI, setModalOpen, productList, userInfo }) => {
     axios.post(url, body).then(
       async (response) => {
         if (response.data.success === true) {
+          await handleStopScan()
           await delay(200);
           setImportSuccess(true);
           await delay(5000);

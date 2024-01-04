@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import "./styles2.css";
 const colors = ["#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF"];
 const images = [
-  "https://firebasestorage.googleapis.com/v0/b/selfcheckout-c9beb.appspot.com/o/Introduction%2Fring.png?alt=media&token=3df54098-35c0-47d0-ab25-4adcb86e73c0&_gl=1*13bsw2f*_ga*NjMxMjYzNjEuMTY5NzUyNTYwMA..*_ga_CW55HF8NVT*MTY5NzUyODc2Ni4yLjEuMTY5NzUyOTIyNC41NC4wLjA.",
   "https://retailsolutions.ie/wp-content/uploads/2022/06/SCO-5-min.jpg",
   "https://firebasestorage.googleapis.com/v0/b/selfcheckout-c9beb.appspot.com/o/Introduction%2FcheckoutItem.png?alt=media&token=ee8c4dd4-9889-4a08-992e-cf6644bee94f&_gl=1*1o8d0e4*_ga*NjMxMjYzNjEuMTY5NzUyNTYwMA..*_ga_CW55HF8NVT*MTY5NzUzMzYyMC4zLjEuMTY5NzUzMzYzMS40OS4wLjA.",
   "https://firebasestorage.googleapis.com/v0/b/selfcheckout-c9beb.appspot.com/o/Introduction%2Fselectpaymentmethod.png?alt=media&token=f97631c7-5d04-40c7-af2a-395587d2ede1&_gl=1*m036c4*_ga*NjMxMjYzNjEuMTY5NzUyNTYwMA..*_ga_CW55HF8NVT*MTY5NzUzMzYyMC4zLjEuMTY5NzUzMzc4MS41NC4wLjA.",
@@ -11,11 +10,10 @@ const images = [
 ];
 
 const instruction = [
-  "Step 1: Turn on Scan Sound below",
-  "Step 2: Place Item to Checkout RFID Reader Device",
-  "Step 3: Scan all items in your cart",
-  "Step 4: Click to checkout and select Payment method",
-  "Step 5: After successful payment, Input your email to recieve Invoive",
+  "Step 1: Place Item to Checkout RFID Reader Device",
+  "Step 2: Scan all items in your cart",
+  "Step 3: Click to checkout and select Payment method",
+  "Step 4: After successful payment, Input your email to recieve Invoive",
 ];
 const delay = 3000;
 const CheckoutInstruction = ({}) => {

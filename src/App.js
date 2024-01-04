@@ -21,12 +21,13 @@ import ForgotPassword from "./components/Users/ForgotPassword";
 import Orders from "./components/Orders/Orders";
 import Camera from "./components/Camera/Camera";
 import SSE from "./components/SeverSendEvent/SSE";
+import MobileCartSSE from "./components/Mobile/SSECart";
 
 import axios from "axios";
 import { Buffer } from "buffer";
 
-//const urlBE = "http://localhost:8000";
-const urlBE = "https://self-checkout.onrender.com";
+const urlBE = "http://localhost:8000";
+//const urlBE = "https://self-checkout.onrender.com";
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -209,6 +210,12 @@ function App() {
             exact
             path="/user/forgotpassword"
             element={<ForgotPassword BE_URL={urlBE} />}
+          ></Route>
+
+          <Route
+            exact
+            path="/mobilecartsse/:mobilecartID"
+            element={<MobileCartSSE productList={products} BE_URL={urlBE} />}
           ></Route>
 
           {/* <Route

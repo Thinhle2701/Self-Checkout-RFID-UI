@@ -2,17 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import "./styles.css";
 const colors = ["#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF"];
 const images = [
-  "https://firebasestorage.googleapis.com/v0/b/selfcheckout-c9beb.appspot.com/o/Introduction%2Fring.png?alt=media&token=3df54098-35c0-47d0-ab25-4adcb86e73c0&_gl=1*13bsw2f*_ga*NjMxMjYzNjEuMTY5NzUyNTYwMA..*_ga_CW55HF8NVT*MTY5NzUyODc2Ni4yLjEuMTY5NzUyOTIyNC41NC4wLjA.",
   "https://mir-s3-cdn-cf.behance.net/projects/404/72737338691409.Y3JvcCw2NzcsNTMwLDIwNiwx.jpg",
   "https://firebasestorage.googleapis.com/v0/b/selfcheckout-c9beb.appspot.com/o/Introduction%2FtestPD.png?alt=media&token=cd1b4d7f-8588-4666-9f7f-1f6959126d3e&_gl=1*1dl7pqh*_ga*NjMxMjYzNjEuMTY5NzUyNTYwMA..*_ga_CW55HF8NVT*MTY5NzUyODc2Ni4yLjEuMTY5NzUyOTY5MC41Ni4wLjA.",
   "https://firebasestorage.googleapis.com/v0/b/selfcheckout-c9beb.appspot.com/o/Introduction%2FAddToCartUI.png?alt=media&token=dc45c881-f7e4-40dd-b395-89bf8f88357c&_gl=1*16mprve*_ga*NjMxMjYzNjEuMTY5NzUyNTYwMA..*_ga_CW55HF8NVT*MTY5NzUyODc2Ni4yLjEuMTY5NzUyOTUxMS41NS4wLjA.",
 ];
 
 const instruction = [
-  "Step 1: Turn on Scan Sound below",
-  "Step 2: Place Item to RFID reader",
-  "Step 3: See Product Information",
-  "Step 4: Add Item to Cart",
+  "Step 1: Place Item to RFID reader",
+  "Step 2: See Product Information",
+  "Step 3: Add Item to Cart",
 ];
 const delay = 3000;
 const MobileCartInstruction = ({}) => {
