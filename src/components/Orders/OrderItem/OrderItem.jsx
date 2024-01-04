@@ -60,8 +60,8 @@ const OrderItem = ({ detail, orderItemValue }) => {
     }
   };
 
-  console.log(detail);
-  console.log(orderItemValue);
+  // console.log(detail);
+  // console.log(orderItemValue);
   return (
     <div>
       <Card

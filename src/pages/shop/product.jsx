@@ -47,7 +47,7 @@ export const Product = ({ product,urlAPI }) => {
   };
   const [modalEditOpen, setModalEditOpen] = useState(false);
   const [modalAskUser, setModalAskUser] = useState(false);
-  console.log(product);
+  //console.log(product);
 
   const handleApproveDelete = async () => {
     const url = urlAPI +"/api/product/delete/" + product.id;

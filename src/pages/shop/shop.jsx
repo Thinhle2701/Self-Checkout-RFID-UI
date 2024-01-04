@@ -25,7 +25,7 @@ const customStyles = {
 };
 
 export const Shop = ({ products, BE_URL, setAdminLogin, setUserInfo }) => {
-  console.log(products);
+  //console.log(products);
   const [modalOpen, setModalOpen] = useState(false);
   const [productSearch, setProductSearch] = useState(products);
   const [search, setSearch] = useState(false);
