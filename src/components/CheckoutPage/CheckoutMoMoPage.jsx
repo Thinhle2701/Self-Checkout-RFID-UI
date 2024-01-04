@@ -110,12 +110,18 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                       await setOrderBill(orderCreated);
                       await setItems(ordItem);
                     } else {
-                      const cartList = JSON.parse(
-                        window.localStorage.getItem("Cart")
-                      );
-                      const totalPrice = JSON.parse(
-                        window.localStorage.getItem("Total")
-                      );
+                      const cartID = window.localStorage.getItem("cartID");
+                      let cartList = [];
+                      const urlCart =
+                        BE_URL + "/api/checkoutcart/" + JSON.parse(cartID);
+                      await axios
+                        .get(urlCart)
+                        .then((resposeCartValue) => {
+                          cartList = resposeCartValue.data.cartItem;
+                          console.log(resposeCartValue.data);
+                        })
+                        .catch((error) => console.log(error));
+
                       let items = [];
                       for (let i = 0; i < cartList.length; i++) {
                         let entity = {
@@ -410,6 +416,7 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                         fontSize: "20px",
                         backgroundColor: "black",
                         width: "200px",
+                        marginTop: "40px",
                       }}
                       variant="contained"
                       onClick={() => {

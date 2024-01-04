@@ -114,16 +114,30 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                     transDate: vnp_TransactionDate,
                   })
                   .then(
-                    (response) => {
+                    async (response) => {
                       console.log(response);
                       if (response.data.vnp_TransactionStatus === "00") {
-                        const cartList = JSON.parse(
-                          window.localStorage.getItem("Cart")
-                        );
-                        const totalPrice = JSON.parse(
-                          window.localStorage.getItem("Total")
-                        );
-                        let items = [];
+                        let totalPrice = "";
+                        const cartID = window.localStorage.getItem("cartID");
+                        let cartList = [];
+                        const urlCart =
+                          BE_URL + "/api/checkoutcart/" + JSON.parse(cartID);
+
+                        console.log(urlCart);
+                        await axios
+                          .get(urlCart)
+                          .then(async (resposeValueCart) => {
+                            cartList = resposeValueCart.data.cartItem;
+                            totalPrice = resposeValueCart.data.totalPrice;
+
+                            await console.log("res cart: ",resposeValueCart);
+                          })
+                          .catch((error) => console.log(error));
+
+                        await console.log("cartt res:", cartList);
+                        await console.log("price res: ", totalPrice);
+
+                        let itemsCartList = [];
                         for (let i = 0; i < cartList.length; i++) {
                           let entity = {
                             productID: cartList[i].productID,
@@ -133,15 +147,17 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                             image: cartList[i].image,
                             uuid: cartList[i].uuid,
                           };
-                          items.push(entity);
+                          await itemsCartList.push(entity);
                         }
+                        await console.log("cartt list:", itemsCartList);
+                        await console.log("price: ", totalPrice);
                         const urlAddOrder = BE_URL + "/api/order/add_order";
                         axios
                           .post(urlAddOrder, {
                             transactionID: response.data.vnp_TxnRef,
                             transDate: response.data.vnp_PayDate,
                             totalPrice: totalPrice,
-                            orderItem: items,
+                            orderItem: itemsCartList,
                             payment: true,
                             paymentMethod: "VNPAY",
                           })
