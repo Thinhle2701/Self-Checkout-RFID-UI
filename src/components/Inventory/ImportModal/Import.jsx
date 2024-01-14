@@ -32,7 +32,7 @@ const client = mqtt.connect(connectUrl, {
 });
 const Import = ({ urlAPI, setModalOpen, productList, userInfo }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const [importDevice, setImportDevice] = useState("b2211");
+  const [importDevice, setImportDevice] = useState("e1118f");
   const [importedScan, setImportedScan] = useState(() => new Set());
   const [scan, setScan] = useState(false);
   const [importData, setImportData] = useState([]);
@@ -62,7 +62,6 @@ const Import = ({ urlAPI, setModalOpen, productList, userInfo }) => {
     // const data = await [...productScan];
     // await console.log("test: ", data);
   };
-
   client.on("message", async function (topic, payload, packet) {
     //var obj = JSON.parse(payload.toString())
 
@@ -162,7 +161,7 @@ const Import = ({ urlAPI, setModalOpen, productList, userInfo }) => {
     axios.post(url, body).then(
       async (response) => {
         if (response.data.success === true) {
-          await handleStopScan()
+          await handleStopScan();
           await delay(200);
           setImportSuccess(true);
           await delay(5000);

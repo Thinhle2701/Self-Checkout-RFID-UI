@@ -6,6 +6,7 @@ import { Button } from "@mui/material";
 import emailjs from "@emailjs/browser";
 import Modal from "react-modal";
 import TextField from "@mui/material/TextField";
+import Security from "../Security/Security";
 
 const customStyles = {
   content: {
@@ -23,6 +24,22 @@ const customStyles = {
   },
 };
 
+const securityStyles = {
+  content: {
+    top: "40%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    height: "750px",
+    width: "610px",
+    backgroundColor: "white",
+    borderColor: "black",
+    marginTop: "100px",
+  },
+};
+
 var ranonce = false;
 const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,6 +50,10 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
   const [sendMailModal, setSendMailModal] = useState(false);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState(false);
+  const [membershipData, setMembershipData] = useState({});
+  const [RFIDSecurityList, setRFIDSecurityList] = useState([]);
+  const [itemSecurityList, setItemSecurityList] = useState([]);
+  const [securityModal, setSecurityModal] = useState(false);
   useEffect(() => {
     if (!ranonce) {
       const queryParameters = new URLSearchParams(window.location.search);
@@ -52,6 +73,8 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
             if (response.data.success === true) {
               console.log(response.data.orderData.orderItem);
               let ordItem = [];
+              let RFIDList = [];
+              setItemSecurityList(response.data.orderData.orderItem);
               for (
                 let i = 0;
                 i < response.data.orderData.orderItem.length;
@@ -68,6 +91,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                   quantity: response.data.orderData.orderItem[i].quantity,
                   image: response.data.orderData.orderItem[i].image,
                 };
+                RFIDList.push(response.data.orderData.orderItem[i].uuid);
                 ordItem.push(item);
               }
               const urlQuery = BE_URL + "/api/checkoutvnp/querydr";
@@ -95,6 +119,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                       paymentMethod: response.data.orderData.paymentMethod,
                     };
                     console.log("order exist", orderCreated);
+                    await setRFIDSecurityList(RFIDList);
                     await setOrderBill(orderCreated);
                     await setItems(ordItem);
                   },
@@ -130,7 +155,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                             cartList = resposeValueCart.data.cartItem;
                             totalPrice = resposeValueCart.data.totalPrice;
 
-                            await console.log("res cart: ",resposeValueCart);
+                            await console.log("res cart: ", resposeValueCart);
                           })
                           .catch((error) => console.log(error));
 
@@ -151,6 +176,20 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                         }
                         await console.log("cartt list:", itemsCartList);
                         await console.log("price: ", totalPrice);
+                        const membershipStorage =
+                          window.localStorage.getItem("membershipcheckout");
+                        console.log(
+                          "membership: ",
+                          JSON.parse(membershipStorage)
+                        );
+
+                        let customer = { customerID: "new customer" };
+                        if (JSON.parse(membershipStorage) !== null) {
+                          customer["customerID"] =
+                            JSON.parse(membershipStorage)[0].customerID;
+                        }
+                        console.log("customer: ", customer);
+
                         const urlAddOrder = BE_URL + "/api/order/add_order";
                         axios
                           .post(urlAddOrder, {
@@ -160,10 +199,13 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                             orderItem: itemsCartList,
                             payment: true,
                             paymentMethod: "VNPAY",
+                            orderBy: customer.customerID,
                           })
                           .then(
                             async (res) => {
                               let ordItem = [];
+                              let RFIDList = [];
+                              setItemSecurityList(res.data.data.orderItem);
                               for (
                                 let i = 0;
                                 i < res.data.data.orderItem.length;
@@ -181,6 +223,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                                   quantity: res.data.data.orderItem[i].quantity,
                                   image: res.data.data.orderItem[i].image,
                                 };
+                                RFIDList.push(res.data.data.orderItem[i].uuid);
                                 ordItem.push(item);
                               }
                               const orderCreated = {
@@ -199,6 +242,7 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                                 paymentMethod: res.data.data.paymentMethod,
                                 orderDate: res.data.data.orderDate,
                               };
+                              await setRFIDSecurityList(RFIDList);
                               await setOrderBill(orderCreated);
                               await setItems(ordItem);
                               window.localStorage.clear();
@@ -419,16 +463,37 @@ const CheckoutVNPAYPage = ({ FE_URL, BE_URL }) => {
                     }}
                     variant="contained"
                     onClick={() => {
-                      const currentURL = window.location.href;
-                      const newURL = currentURL.split(window.location.pathname);
-                      console.log(newURL);
-                      const backURL = newURL[0] + "/customer";
-                      window.location.replace(backURL);
+                      // const currentURL = window.location.href;
+                      // const newURL = currentURL.split(window.location.pathname);
+                      // console.log(newURL);
+                      // const backURL = newURL[0] + "/customer";
+                      // window.location.replace(backURL);
+                      console.log("security");
+                      setSecurityModal(true);
                     }}
                   >
-                    Finish
+                    Verify Item Security Gate
                   </Button>
                 </div>
+
+                {securityModal === true ? (
+                  <>
+                    <Modal
+                      isOpen={securityModal}
+                      style={securityStyles}
+                      ariaHideApp={false}
+                    >
+                      <Security
+                        RFID_List={RFIDSecurityList}
+                        BE_URL={BE_URL}
+                        itemSecurityList={itemSecurityList}
+                      ></Security>
+                    </Modal>
+                  </>
+                ) : (
+                  <></>
+                )}
+
                 {sendMailModal === true ? (
                   <>
                     <Modal

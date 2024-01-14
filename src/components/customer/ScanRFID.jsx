@@ -50,7 +50,7 @@ const customStyles = {
     bottom: "auto",
     marginRight: "-50%",
     transform: "translate(-50%, -50%)",
-    height: "300px",
+    height: "310px",
     width: "510px",
     backgroundColor: "white",
     borderColor: "black",
@@ -99,6 +99,10 @@ const ScanRFID = ({ productList, BE_URL }) => {
   const [errorScan, setErrorScan] = useState(false);
   const [mobileCart, setMobileCart] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [membershipModal, setMembershipModal] = useState(false);
+  const [membershipData, setMembershipData] = useState({});
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [errorPhoneNumber, setErrorPhoneNumber] = useState(false);
 
   const handleStartScan = () => {
     const url = BE_URL + "/api/checkoutcart/add_cart";
@@ -214,8 +218,6 @@ const ScanRFID = ({ productList, BE_URL }) => {
     currency: "VND",
   }).format(total);
 
-
-
   function handleOnchange(event) {
     setCheckoutCounter(event.target.value);
   }
@@ -233,9 +235,8 @@ const ScanRFID = ({ productList, BE_URL }) => {
     await window.location.reload();
   };
 
-
   const handleClickCheckout = () => {
-    setCheckoutModal(true);
+    setMembershipModal(true);
   };
 
   const handleClickCheckoutVNPAY = () => {
@@ -297,6 +298,44 @@ const ScanRFID = ({ productList, BE_URL }) => {
   const handleClickCancleInput = () => {
     setMobileCart("");
     setInputCartModal(false);
+  };
+
+  const handleClickCancleInputPhoneNumber = async () => {
+    setPhoneNumber("");
+    setMembershipModal(false);
+    await setCheckoutModal(true);
+  };
+
+  const handleClickSubmitPhoneNumber = () => {
+    if (phoneNumber === "") {
+      console.log("empty");
+      setErrorPhoneNumber(true);
+    } else {
+      const url = BE_URL + "/api/membership/membership_checkout";
+      axios.post(url, { phoneNumber: phoneNumber }).then(
+        async (response) => {
+          console.log(response);
+          if (response.data.length === 0) {
+            console.log("invalid membership");
+            setErrorPhoneNumber(true);
+            await delay(2000);
+            await setErrorPhoneNumber(false);
+          } else {
+            console.log("valid membership");
+            setMembershipData(response.data);
+            window.localStorage.setItem(
+              "membershipcheckout",
+              JSON.stringify(response.data)
+            );
+            setMembershipModal(false);
+            await setCheckoutModal(true);
+          }
+        },
+        (error) => {
+          console.log("err", error);
+        }
+      );
+    }
   };
 
   const handleClickSubmit = () => {
@@ -671,6 +710,133 @@ const ScanRFID = ({ productList, BE_URL }) => {
                         >
                           Checkout
                         </Button>
+
+                        {membershipModal === true ? (
+                          <>
+                            <Modal
+                              isOpen={membershipModal}
+                              style={customStyles}
+                              ariaHideApp={false}
+                            >
+                              <div>
+                                {" "}
+                                <button
+                                  style={{
+                                    marginLeft: "auto",
+                                    display: "flex",
+                                    backgroundColor: "transparent",
+                                    border: "none",
+                                    fontSize: "20px",
+                                    cursor: "pointer",
+                                    marginBottom: "-30px",
+                                  }}
+                                  onClick={() => {
+                                    setMembershipModal(false);
+                                  }}
+                                >
+                                  X
+                                </button>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    marginBottom: "-40px",
+                                    fontSize: "17px",
+                                    marginTop: "20px",
+                                  }}
+                                >
+                                  <h2>Membership Account</h2>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    marginBottom: "-40px",
+                                    fontSize: "17px",
+                                    marginTop: "11%",
+                                  }}
+                                >
+                                  <TextField
+                                    id="outlined-helperText"
+                                    label="Input Your Phone Number"
+                                    placeholder="Phone Number"
+                                    helperText="Phone Number From Your Membership"
+                                    onChange={(e) => {
+                                      if (e.target.value === "") {
+                                        errorPhoneNumber(false);
+                                      }
+                                      setPhoneNumber(e.target.value);
+                                    }}
+                                  />
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    marginBottom: "-40px",
+                                    fontSize: "17px",
+                                    marginTop: "40px",
+                                  }}
+                                >
+                                  {errorPhoneNumber === true ? (
+                                    <>
+                                      <p
+                                        style={{
+                                          color: "red",
+                                          fontWeight: "bold",
+                                        }}
+                                      >
+                                        ❌ Invalid Phone
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <></>
+                                  )}
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    marginBottom: "-40px",
+                                    fontSize: "17px",
+                                    marginTop: "14%",
+                                  }}
+                                >
+                                  <Button
+                                    variant="contained"
+                                    style={{
+                                      backgroundColor: "black",
+                                      color: "white",
+                                      width: "100px",
+                                    }}
+                                    onClick={() => {
+                                      handleClickSubmitPhoneNumber();
+                                    }}
+                                  >
+                                    Submit
+                                  </Button>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "block",
+                                    marginTop: "60px",
+                                    marginLeft: "37%",
+                                  }}
+                                >
+                                  <Button
+                                    variant="text"
+                                    style={{ color: "black" }}
+                                    onClick={handleClickCancleInputPhoneNumber}
+                                  >
+                                    Skip this step
+                                  </Button>
+                                </div>
+                              </div>
+                            </Modal>
+                          </>
+                        ) : (
+                          <></>
+                        )}
 
                         <Modal
                           isOpen={checkoutModal}

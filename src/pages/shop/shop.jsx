@@ -93,6 +93,15 @@ export const Shop = ({ products, BE_URL, setAdminLogin, setUserInfo }) => {
               >
                 Order History
               </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const currentUrl = window.location.href;
+                  const dashboardURL = currentUrl + "dashboard";
+                  window.location.replace(dashboardURL);
+                }}
+              >
+                Dashboard
+              </MenuItem>
               <MenuItem onClick={() => handleSignOut()}>Sign Out</MenuItem>
             </Menu>
           </div>

@@ -6,6 +6,7 @@ import { Button } from "@mui/material";
 import emailjs from "@emailjs/browser";
 import Modal from "react-modal";
 import TextField from "@mui/material/TextField";
+import Security from "../Security/Security";
 const customStyles = {
   content: {
     top: "40%",
@@ -22,6 +23,22 @@ const customStyles = {
   },
 };
 
+const securityStyles = {
+  content: {
+    top: "40%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    height: "750px",
+    width: "610px",
+    backgroundColor: "white",
+    borderColor: "black",
+    marginTop: "100px",
+  },
+};
+
 var ranonce = false;
 const CheckoutMoMoPage = ({ BE_URL }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -32,6 +49,10 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
   const [sendMailModal, setSendMailModal] = useState(false);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState(false);
+  const [membershipData, setMembershipData] = useState({});
+  const [RFIDSecurityList, setRFIDSecurityList] = useState([]);
+  const [securityModal, setSecurityModal] = useState(false);
+  const [itemSecurityList, setItemSecurityList] = useState([]);
 
   const dateValueNormal = (dateCurr) => {
     //"2023-12-04T07:22:30.243+00:00"
@@ -68,6 +89,8 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                   async (response) => {
                     if (response.data.success === true) {
                       let ordItem = [];
+                      let RFIDList = [];
+                      setItemSecurityList(response.data.orderData.orderItem);
                       for (
                         let i = 0;
                         i < response.data.orderData.orderItem.length;
@@ -87,6 +110,9 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                             response.data.orderData.orderItem[i].quantity,
                           image: response.data.orderData.orderItem[i].image,
                         };
+                        RFIDList.push(
+                          response.data.orderData.orderItem[i].uuid
+                        );
                         ordItem.push(item);
                       }
                       const orderCreated = {
@@ -107,11 +133,25 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                       };
                       console.log("order exist", orderCreated);
                       console.log("ammout", response.data.orderData.totalPrice);
+                      await setRFIDSecurityList(RFIDList);
                       await setOrderBill(orderCreated);
                       await setItems(ordItem);
                     } else {
                       const cartID = window.localStorage.getItem("cartID");
+                      const membershipStorage =
+                        window.localStorage.getItem("membershipcheckout");
+                      console.log(
+                        "membership: ",
+                        JSON.parse(membershipStorage)
+                      );
+
+                      let customer = { customerID: "new customer" };
+                      if (JSON.parse(membershipStorage) !== null) {
+                        customer["customerID"] =
+                          JSON.parse(membershipStorage)[0].customerID;
+                      }
                       let cartList = [];
+                      let RFIDList = [];
                       const urlCart =
                         BE_URL + "/api/checkoutcart/" + JSON.parse(cartID);
                       await axios
@@ -132,8 +172,10 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                           uuid: cartList[i].uuid,
                           image: cartList[i].image,
                         };
+
                         items.push(entity);
                       }
+                      console.log("cust: ", customer);
                       const URL_ADDORDER = BE_URL + "/api/order/add_order";
                       axios
                         .post(URL_ADDORDER, {
@@ -143,10 +185,14 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                           orderItem: items,
                           payment: true,
                           paymentMethod: "MOMO",
+                          orderBy: customer.customerID,
                         })
                         .then(
                           async (resAddOrder) => {
                             let ordItem = [];
+                            setItemSecurityList(
+                              resAddOrder.data.data.orderItem
+                            );
                             for (
                               let i = 0;
                               i < resAddOrder.data.data.orderItem.length;
@@ -168,6 +214,9 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                                   resAddOrder.data.data.orderItem[i].quantity,
                                 image: resAddOrder.data.data.orderItem[i].image,
                               };
+                              RFIDList.push(
+                                resAddOrder.data.data.orderItem[i].uuid
+                              );
                               ordItem.push(item);
                             }
                             const orderCreated = {
@@ -188,6 +237,8 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                                 resAddOrder.data.data.paymentMethod,
                               orderDate: resAddOrder.data.data.orderDate,
                             };
+                            console.log("security list: ", RFIDList);
+                            await setRFIDSecurityList(RFIDList);
                             await setOrderBill(orderCreated);
                             await setItems(ordItem);
                             window.localStorage.clear();
@@ -420,18 +471,38 @@ const CheckoutMoMoPage = ({ BE_URL }) => {
                       }}
                       variant="contained"
                       onClick={() => {
-                        const currentURL = window.location.href;
-                        const newURL = currentURL.split(
-                          window.location.pathname
-                        );
-                        console.log(newURL);
-                        const backURL = newURL[0] + "/customer";
-                        window.location.replace(backURL);
+                        // const currentURL = window.location.href;
+                        // const newURL = currentURL.split(
+                        //   window.location.pathname
+                        // );
+                        // console.log(newURL);
+                        // const backURL = newURL[0] + "/customer";
+                        // window.location.replace(backURL);
+                        console.log("security");
+                        setSecurityModal(true);
                       }}
                     >
-                      Finish
+                      Verify Item Security Gate
                     </Button>
                   </div>
+
+                  {securityModal === true ? (
+                    <>
+                      <Modal
+                        isOpen={securityModal}
+                        style={securityStyles}
+                        ariaHideApp={false}
+                      >
+                        <Security
+                          RFID_List={RFIDSecurityList}
+                          BE_URL={BE_URL}
+                          itemSecurityList={itemSecurityList}
+                        ></Security>
+                      </Modal>
+                    </>
+                  ) : (
+                    <></>
+                  )}
 
                   {sendMailModal === true ? (
                     <>

@@ -22,6 +22,8 @@ import Orders from "./components/Orders/Orders";
 import Camera from "./components/Camera/Camera";
 import SSE from "./components/SeverSendEvent/SSE";
 import MobileCartSSE from "./components/Mobile/SSECart";
+import LoginMembership from "./components/Membership/LoginMembership";
+import Dashboard from "./components/Dashboard/Dashboard";
 
 import axios from "axios";
 import { Buffer } from "buffer";
@@ -223,6 +225,28 @@ function App() {
             path="/camera"
             element={<Camera BE_URL={urlBE} />}
           ></Route> */}
+
+          <Route
+            exact
+            path="/membership"
+            element={<LoginMembership urlApi={urlBE} />}
+          ></Route>
+
+          <Route
+            exact
+            path="/dashboard"
+            element={
+              adminLogin ? (
+                <Dashboard></Dashboard>
+              ) : (
+                <LoginForm
+                  urlApi={urlBE}
+                  setAdminLogin={setAdminLogin}
+                  setUserInfo={setUserInfo}
+                ></LoginForm>
+              )
+            }
+          ></Route>
         </Routes>
       </Router>
     </div>
